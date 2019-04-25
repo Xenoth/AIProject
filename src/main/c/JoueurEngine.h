@@ -5,8 +5,8 @@
 
 #include "../../lib/c/SCS-Lib/fonctionsTCP.h"
 #include "../../protocol/c/protocolYokai.h"
+#include "../../protocol/c/YokaiJavaEngineProtocol.h"
 
-#define NAME_SIZE 30
 
 enum JoueurStep_type {
     INIT = 1,
@@ -74,7 +74,8 @@ int connectToServers(JoueurState *state, char *nameServerC, unsigned short portS
  * @param state     in
  * @return
  */
-int sendPartieRequestToServerC(JoueurState state);
+int sendPartieRequestToServerC(JoueurState *state);
+
 
 /**
  *
@@ -90,7 +91,8 @@ int receivePartieAnswerFromServerC(JoueurState *state, TPartieRep *partieRep);
  * @param coupReq   in
  * @return
  */
-int sendCoupRequestToServerC(JoueurState state, TCoupReq coupReq);
+int sendCoupRequestToServerC(JoueurState *state, TCoupReq coupReq);
+
 
 /**
  *
@@ -100,10 +102,77 @@ int sendCoupRequestToServerC(JoueurState state, TCoupReq coupReq);
  */
 int receiveCoupAnswerFromServerC(JoueurState *state, TCoupRep *coupRep);
 
-// TODO
-int sendInitRequestToJavaServer(JoueurState state, int other);
-// TODO
-int sendCoupToJavaServer(JoueurState state, int other);
+/**
+ *
+ * @param state
+ * @param coupReq
+ * @return
+ */
+int receiveCoupReqFromServerC(JoueurState *state, TCoupReq *coupReq);
+
+/**
+ *
+ * @param state
+ * @param newGameRequest
+ * @return
+ */
+int sendInitRequestToJavaServer(JoueurState *state, YJNewGameRequest newGameRequest);
+
+/**
+ *
+ * @param state
+ * @param newGameAnswer
+ * @return
+ */
+int receiveInitAnswerFromJavaServer(JoueurState *state, YJNewGameAnswer *newGameAnswer);
+
+/**
+ *
+ * @param state
+ * @param sendMoveRequest
+ * @return
+ */
+int sendMoveRequestToJavaServer(JoueurState *state, YJSendMoveRequest sendMoveRequest);
+
+/**
+ *
+ * @param state
+ * @param moveAnswer
+ * @return
+ */
+int receiveMoveAnswerFromJavaServer(JoueurState *state, YJMoveAnswer *moveAnswer);
+
+/**
+ *
+ * @param state
+ * @param sendPlaceRequest
+ * @return
+ */
+int sendPlaceRequestToJavaServer(JoueurState *state, YJSendPlaceRequest sendPlaceRequest);
+
+/**
+ *
+ * @param state
+ * @param placeAnswer
+ * @return
+ */
+int receivePlaceAnswerFromJavaServer(JoueurState *state, YJPlaceAnswer *placeAnswer);
+
+/**
+ *
+ * @param state
+ * @param askNextMoveRequest
+ * @return
+ */
+int askNextCoupToJavaServer(JoueurState *state, YJAskNextMoveRequest askNextMoveRequest);
+
+/**
+ *
+ * @param state
+ * @param other
+ * @return
+ */
+int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMoveAnswer);
 
 /**
  *
@@ -111,5 +180,12 @@ int sendCoupToJavaServer(JoueurState state, int other);
  * @return
  */
 int shutdownAndCloseSockets(JoueurState *state);
+
+int sendInt32b(JoueurState *state, int32_t something);
+int receiveByteBufferFromJavaEngine(JoueurState *state, char *buff);
+
+TCoupReq YJAskNextMoveAnswer2TCoupReq(YJAskNextMoveAnswer askNextMoveAnswer, uint8_t nbGames);
+YJSendMoveRequest TCoupReq2YJSendMoveRequest(TCoupReq coupReq);
+YJSendPlaceRequest TCoupReq2YJSendPlaceRequest(TCoupReq coupReq);
 
 #endif
