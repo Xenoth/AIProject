@@ -25,6 +25,7 @@ int updateJoueur(JoueurState *state)
                 state->step = END_ERROR;
                 return -1;
             }
+
             TPartieRep partieRep;
             if (receivePartieAnswerFromServerC(state, &partieRep) < 0)
             {
@@ -67,7 +68,6 @@ int updateJoueur(JoueurState *state)
                 state->step = END_ERROR;
                 return -1;
             }
-
             if(state->sens == SUD)
                 state->step = PLAY_TURN;
             else
@@ -235,7 +235,6 @@ int updateJoueur(JoueurState *state)
                     return -1;
                 }
             }
-
 
             state->step = PLAY_TURN;
 
@@ -476,6 +475,7 @@ int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMo
     askNextMoveAnswer->to.Line = byteArrayJavaToIntC(buff);
 
     return 0;
+
 }
 
 int shutdownAndCloseSockets(JoueurState *state)

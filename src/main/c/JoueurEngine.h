@@ -7,6 +7,7 @@
 #include "../../protocol/c/protocolYokai.h"
 #include "../../protocol/c/YokaiJavaEngineProtocol.h"
 
+
 enum JoueurStep_type {
     INIT = 1,
     START_FIRST_GAME = 2,
@@ -75,6 +76,7 @@ int connectToServers(JoueurState *state, char *nameServerC, unsigned short portS
  */
 int sendPartieRequestToServerC(JoueurState *state);
 
+
 /**
  *
  * @param state     in/out
@@ -90,6 +92,7 @@ int receivePartieAnswerFromServerC(JoueurState *state, TPartieRep *partieRep);
  * @return
  */
 int sendCoupRequestToServerC(JoueurState *state, TCoupReq coupReq);
+
 
 /**
  *
