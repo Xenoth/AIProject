@@ -30,35 +30,35 @@ can_move_se(Case):-
 
 move_n(Case, NvCase):-
     can_move_n(Case),
-    NvCase is Case - 5.
+    NvCase = Case - 5.
 
 move_s(Case, NvCase):-
     can_move_s(Case),
-    NvCase is Case + 5.
+    NvCase = Case + 5.
 
 move_e(Case, NvCase):-
     can_move_e(Case),
-    NvCase is Case + 1.
+    NvCase = Case + 1.
 
 move_o(Case, NvCase):-
     can_move_o(Case),
-    NvCase is Case - 1.
+    NvCase = Case - 1.
 
 move_ne(Case, NvCase):-
     can_move_ne(Case),
-    NvCase is Case - 4.
+    NvCase = Case - 4.
 
 move_no(Case, NvCase):-
     can_move_no(Case),
-    NvCase is Case - 6.
+    NvCase = Case - 6.
 
 move_se(Case, NvCase):-
     can_move_se(Case),
-    NvCase is Case + 6.
+    NvCase = Case + 6.
 
 move_so(Case, NvCase):-
     can_move_so(Case),
-    NvCase is Case + 4.
+    NvCase = Case + 4.
 
 % Kodoma Sud
 move(kodoma, sud, Case, NvCase):-
@@ -251,7 +251,3 @@ move(super_oni, nord, Case, NvCase):-
 
 move(super_oni, nord, Case, NvCase):-
     move_n(Case, NvCase).
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes

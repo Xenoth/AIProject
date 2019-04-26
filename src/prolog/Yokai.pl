@@ -1,100 +1,151 @@
 :-use_module(library(plunit)).
 :-use_module(library(lists)).
 
-:- [DeplacementPiecesYokai].
+:- include('DeplacementPiecesYokai.pl').
 
+% Exemple de plateau, début de partie.
 plateau([
-oni_s, kirin_s, koropokkuru_s, kirin_s, oni_s,
-v, v, v, v, v,
-v, kodoma_s, kodoma_s, kodoma_s, v,
-v, kodoma_n, kodoma_n, kodoma_n, v,
-v, v, v, v, v,
-oni_n, kirin_n, koropokkuru_n, kirin_n, oni_n
+[oni, sud, moi, 0], [kirin, sud, moi, 1], [koropokkuru, sud, moi, 2], [kirin, sud, moi, 3], [oni, sud, moi, 4],
+[v, none, neutre, 5], [v, none, neutre, 6], [kodoma, nord, adv, 7], [v, none, neutre, 8], [v, none, neutre, 9],
+[v, none, neutre, 10], [kodoma, sud, moi, 11], [kodoma, sud, moi, 12], [kodoma, sud, moi, 13], [v, none, neutre, 14],
+[v, none, neutre, 15], [kodoma, nord, adv, 16], [kodoma, nord, adv, 17], [kodoma, nord, adv, 18], [v, none, neutre, 19],
+[v, none, neutre, 20], [v, none, neutre, 21], [v, none, neutre, 22], [v, none, neutre, 23], [v, none, neutre, 24],
+[oni, nord, adv, 25], [kirin, nord, adv, 26], [koropokkuru, nord, adv, 27], [kirin, nord, adv, 28], [oni, nord, adv, 29]
 ]).
 
-valeur_sur_plateau(v, neutre, 0).
-valeur_sur_plateau(kodoma, moi, 10).
-valeur_sur_plateau(kodoma, adv, -10).
-valeur_sur_plateau(oni, moi, 25).
-valeur_sur_plateau(oni, adv, -25).
-valeur_sur_plateau(kodoma_samourai, moi, 55).
-valeur_sur_plateau(kodoma_samourai, adv, -55).
-valeur_sur_plateau(super_oni, moi, 55).
-valeur_sur_plateau(super_oni, adv, -55).
-valeur_sur_plateau(kirin, moi, 80).
-valeur_sur_plateau(kirin, adv, -80).
-valeur_sur_plateau(koropokkuru, moi, 2000).
-valeur_sur_plateau(koropokkuru, adv, -2000).
+valeur_piece_sur_plateau(v, 0).
+valeur_piece_sur_plateau(kodoma, 10).
+valeur_piece_sur_plateau(oni, 25).
+valeur_piece_sur_plateau(kodoma_samourai, 55).
+valeur_piece_sur_plateau(super_oni, 55).
+valeur_piece_sur_plateau(kirin, 80).
+valeur_piece_sur_plateau(koropokkuru, 2000).
 
 valeur_promotion(kodoma, 50).
 valeur_promotion(oni, 50).
 
-% Plateau = [v, PIECE, ...]
-% Piece = [TYPE, SENS, FACTION]
-
-deplacer_piece_avec_cout(Plateau, [kodoma, sud, moi], FromCase, ToCase, Cout):-
+deplacer_piece_sur_plateau(Plateau, [kodoma, sud, Faction, FromCase], ToCase, Cout):-
     move(kodoma, sud, FromCase, ToCase),
     ToCase >= 20,
-    nth0(ToCase, Plateau, [TypePiece,FactionPiece,_]),
-    dif(FactionPiece, moi),
-    valeur_sur_plateau(TypePiece, FactionPiece, C1),
+    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
+    dif(FactionPiece, Faction),
+    valeur_piece_sur_plateau(TypePiece, C1),
     valeur_promotion(kodoma, C2),
     Cout is C1 + C2.
 
-deplacer_piece_avec_cout(Plateau, [kodoma, nord, moi], FromCase, ToCase, Cout):-
+deplacer_piece_sur_plateau(Plateau, [kodoma, nord, Faction, FromCase], ToCase, Cout):-
     move(kodoma, nord, FromCase, ToCase),
     ToCase < 10,
-    nth0(ToCase, Plateau, [TypePiece,FactionPiece,_]),
-    dif(FactionPiece, moi),
-    valeur_sur_plateau(TypePiece, FactionPiece, C1),
+    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
+    dif(FactionPiece, Faction),
+    valeur_piece_sur_plateau(TypePiece, C1),
     valeur_promotion(kodoma, C2),
     Cout is C1 + C2.
 
 
-deplacer_piece_avec_cout(Plateau, [oni, sud, moi], FromCase, ToCase, Cout):-
+deplacer_piece_sur_plateau(Plateau, [oni, sud, Faction, FromCase], ToCase, Cout):-
     move(oni, sud, FromCase, ToCase),
     ToCase >= 20,
-    nth0(ToCase, Plateau, [TypePiece,FactionPiece,_]),
-    dif(FactionPiece, moi),
-    valeur_sur_plateau(TypePiece, FactionPiece, C1),
+    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
+    dif(FactionPiece, Faction),
+    valeur_piece_sur_plateau(TypePiece, C1),
     valeur_promotion(oni, C2),
     Cout is C1 + C2.
 
-deplacer_piece_avec_cout(Plateau, [oni, nord, moi], FromCase, ToCase, Cout):-
+deplacer_piece_sur_plateau(Plateau, [oni, nord, Faction, FromCase], ToCase, Cout):-
     move(oni, nord, FromCase, ToCase),
     ToCase  < 10,
-    nth0(ToCase, Plateau, [TypePiece,FactionPiece,_]),
-    valeur_sur_plateau(TypePiece, FactionPiece, C1),
-    dif(FactionPiece, moi),
+    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
+    valeur_piece_sur_plateau(TypePiece, C1),
+    dif(FactionPiece, Faction),
     valeur_promotion(oni, C2),
     Cout is C1 + C2.
 
-deplacer_piece_avec_cout(Plateau, [Type, Sens, Faction], FromCase, ToCase, Cout):-
+deplacer_piece_sur_plateau(Plateau, [Type, Sens, Faction, FromCase], ToCase, Cout):-
     move(Type, Sens, FromCase, ToCase),
-    nth0(ToCase, Plateau, [TypePiece,FactionPiece,_]),
-    dif(FactionPiece, moi),
-    valeur_sur_plateau(TypePiece, FactionPiece, Cout).
+    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
+    dif(FactionPiece, Faction),
+    valeur_piece_sur_plateau(TypePiece, Cout).
+
+test1(ToCase,Cout):-
+    plateau(Plateau),
+    deplacer_piece_sur_plateau(Plateau,[kirin,sud,moi,1],ToCase,Cout).
+
+test2(ToCase,Cout):-
+    plateau(Plateau),
+    deplacer_piece_sur_plateau(Plateau,[kodoma,sud,moi,11], ToCase, Cout).
 
 
-recuperer_piece_moi([[Type, _, Faction]|_], Case, [Type, Case]):-
-    Faction == moi.
+recuperer_piece_faction([[Piece,Sens,Faction,Case]|_], Faction, [Piece,Sens,Faction,Case]).
 
-recuperer_piece_moi([_|Rest], Case, [Type, Case]):-
-    CaseMinus1 is Case - 1,
-    recuperer_piece_moi(Rest, CaseMinus1, [Type, Case]).
+recuperer_piece_faction([_|Tail], Faction, Piece):-
+    recuperer_piece_faction(Tail, Faction, Piece).
 
-recuperer_pieces_moi(Plateau, Case, ListePieces):-
-    findall(Piece, estPieceMoi(PLATEAU, PIECE), ListePieces).
+recuperer_pieces_faction(Plateau, Faction, ListePieces):-
+    findall(Piece, recuperer_piece_faction(Plateau, Faction, Piece), ListePieces).
 
-recuperer_coup_piece()
+test3(ListePieces):-
+    plateau(Plateau),
+    recuperer_pieces_faction(Plateau, moi, ListePieces).
 
-calculer_liste_coups(Plateau, Coups):-
-    recuperer_pieces_moi(Plateau, 0, Pieces),
+recuperer_tout_les_coups_piece(Plateau, Piece, ListeCoups):-
+    findall([Piece, ToCase, Cout], deplacer_piece_sur_plateau(Plateau,Piece,ToCase,Cout), ListeCoups).
+
+test4(ListeCoups):-
+    plateau(Plateau),
+    recuperer_tout_les_coups_piece(Plateau, [kirin,sud,moi,1],ListeCoups).
+
+recuperer_meilleur_coup_piece_acc([],Acc,Acc).
+
+recuperer_meilleur_coup_piece_acc([[Piece,ToCase,Cout]|Tail], [_,_,Cout1],Res):-
+    Cout > Cout1,
+    recuperer_meilleur_coup_piece_acc(Tail,[Piece, ToCase, Cout], Res).
+
+recuperer_meilleur_coup_piece_acc([_|Tail],Acc,Res):-
+    recuperer_meilleur_coup_piece_acc(Tail,Acc,Res).
+
+recuperer_meilleur_coup_piece(ListeCoups,Res):-
+    recuperer_meilleur_coup_piece_acc(ListeCoups,[_,_,-1],Res),!.
+
+test5(Coup):-
+    plateau(Plateau),
+    recuperer_tout_les_coups_piece(Plateau, [kirin,sud,moi,1],ListeCoups),
+    recuperer_meilleur_coup_piece(ListeCoups,Coup).
 
 
-recuperer_meilleur_coup(Coups, [Case, NvCase, Cout]):-
+recuperer_meilleur_coup_pieces_acc(_,[], Acc, Acc).
+
+recuperer_meilleur_coup_pieces_acc(Plateau,[Piece|Tail],[_,_,Cout1],Res):-
+    recuperer_tout_les_coups_piece(Plateau,Piece,ListeCoups),
+    recuperer_meilleur_coup_piece(ListeCoups,[Piece, ToCase, Cout]),
+    Cout > Cout1,
+    recuperer_meilleur_coup_pieces_acc(Plateau, Tail, [Piece, ToCase, Cout], Res).
 
 
-jouer_prochain_coup(Plateau, TypePiece, Case, NvCase):-
-    calculer_liste_coups(Plateau, Coups),
-    recuperer_meilleur_coup(Coups, [Case, NvCase, _]).
+recuperer_meilleur_coup_pieces_acc(Plateau, [_|Tail], Acc, Res):-
+    recuperer_meilleur_coup_pieces_acc(Plateau, Tail, Acc, Res).
+
+recuperer_meilleur_coup_pieces(Plateau, ListePieces, Coup):-
+    recuperer_meilleur_coup_pieces_acc(Plateau, ListePieces,[_,_,-1], Coup),!.
+
+
+test6(Coup):-
+    plateau(Plateau),
+    recuperer_pieces_faction(Plateau, moi, ListePieces),
+    recuperer_meilleur_coup_pieces(Plateau, ListePieces, Coup).
+
+% Predicat donnant le meilleur coup a jouer en jeu, à appeler depuis
+% Jasper.
+%
+% Param Plateau : Plateau actuel, cf prédicat plateau() pour voir la
+% structure
+% Param Faction : moi | adv, devrait pour le moment etre mis à moi
+% Return From Case : Case de 0 à 29
+% Return To Case : Case de 0 à 29
+recuperer_meilleur_coup_v1(Plateau, Faction, FromCase, ToCase):-
+    recuperer_pieces_faction(Plateau, Faction, ListePieces),
+    recuperer_meilleur_coup_pieces(Plateau, ListePieces, [[_,_,_,FromCase], ToCase,_]).
+
+test7(FromCase, ToCase):-
+    plateau(Plateau),
+    recuperer_meilleur_coup(Plateau, moi, FromCase, ToCase).
