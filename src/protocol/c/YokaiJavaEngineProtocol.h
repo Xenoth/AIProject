@@ -3,9 +3,9 @@
 
 typedef enum
 {
-    YJ_NEW_GAME = 1,
-    YJ_SEND_MOVE = 2,
-    YJ_ASK_MOVE = 3,
+    YJ_NEW_GAME = 0,
+    YJ_SEND_MOVE = 1,
+    YJ_ASK_MOVE = 2,
 
     YJ_REQUEST_ID_C_LIMITATION_MAKE_ENUM_32_BIT = 0xffff,
 } YJRequestID;
@@ -50,8 +50,8 @@ typedef struct
  */
 typedef enum
 {
-    YJ_MOVE = 1,
-    YJ_PLACE = 2
+    YJ_MOVE = 0,
+    YJ_PLACE = 1
 } YJMoveType;
 
 // From 0 to n - 1
@@ -77,12 +77,12 @@ typedef struct
 
 typedef enum
 {
-    YJ_KODAMA = 1,
-    YJ_KODAMA_SAMOURAI = 2,
-    YJ_KIRIN = 3,
-    YJ_KOROPOKKURU = 4,
-    YJ_ONI = 5,
-    YJ_SUPER_ONI = 6
+    YJ_KODAMA = 0,
+    YJ_KODAMA_SAMOURAI = 1,
+    YJ_KIRIN = 2,
+    YJ_KOROPOKKURU = 3,
+    YJ_ONI = 4,
+    YJ_SUPER_ONI = 5
 } YJPiece;
 
 typedef struct
