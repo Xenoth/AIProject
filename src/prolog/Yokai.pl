@@ -3,7 +3,7 @@
 
 :- include('DeplacementPiecesYokai.pl').
 
-% Exemple de plateau, début de partie.
+% Exemple de plateau, dï¿½but de partie.
 plateau([
 [oni, sud, moi, 0], [kirin, sud, moi, 1], [koropokkuru, sud, moi, 2], [kirin, sud, moi, 3], [oni, sud, moi, 4],
 [v, none, neutre, 5], [v, none, neutre, 6], [kodoma, nord, adv, 7], [v, none, neutre, 8], [v, none, neutre, 9],
@@ -134,14 +134,14 @@ test6(Coup):-
     recuperer_pieces_faction(Plateau, moi, ListePieces),
     recuperer_meilleur_coup_pieces(Plateau, ListePieces, Coup).
 
-% Predicat donnant le meilleur coup a jouer en jeu, à appeler depuis
+% Predicat donnant le meilleur coup a jouer en jeu, ï¿½ appeler depuis
 % Jasper.
 %
-% Param Plateau : Plateau actuel, cf prédicat plateau() pour voir la
+% Param Plateau : Plateau actuel, cf prï¿½dicat plateau() pour voir la
 % structure
-% Param Faction : moi | adv, devrait pour le moment etre mis à moi
-% Return From Case : Case de 0 à 29
-% Return To Case : Case de 0 à 29
+% Param Faction : moi | adv, devrait pour le moment etre mis ï¿½ moi
+% Return From Case : Case de 0 ï¿½ 29
+% Return To Case : Case de 0 ï¿½ 29
 recuperer_meilleur_coup_v1(Plateau, Faction, FromCase, ToCase):-
     recuperer_pieces_faction(Plateau, Faction, ListePieces),
     recuperer_meilleur_coup_pieces(Plateau, ListePieces, [[_,_,_,FromCase], ToCase,_]).
