@@ -1,8 +1,6 @@
 // importation des classes utiles à Jasper
 
-import se.sics.jasper.Query;
-import se.sics.jasper.SICStus;
-import se.sics.jasper.SPException;
+import se.sics.jasper.*;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -10,6 +8,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+
 
 public class JavaEngine {
 
@@ -42,13 +41,13 @@ public class JavaEngine {
             out = sockComm.getOutputStream();
             dos = new DataOutputStream(out);
 
-                    // Creation d'un object SICStus
+            // Creation d'un object SICStus
             sp = new SICStus();
 
             // Chargement d'un fichier prolog .pl
             sp.load("src/prolog/Yokai.pl");
 
-
+            deroulementPartie(sp,dis,dos);
 
         }
         // exception déclanchée par SICStus lors de la création de l'objet sp
@@ -58,108 +57,119 @@ public class JavaEngine {
             System.exit(-2);
         }
         catch (IOException e) {
-            System.err.println("Exception SICStus Prolog : " + e);
+            System.err.println("Exception dans la creation de la socket : " + e);
             e.printStackTrace();
             System.exit(-2);
         }
 
     }
 
-    public static YokaiJavaEngineProtocol.YJNewGameRequest recvInitRequest(DataInputStream dis) throws IOException{
-        byte[] b = new byte[8];
-        dis.read(b);
+    private static void deroulementPartie(SICStus sp, DataInputStream dis, DataOutputStream dos){
+
+        YokaiJavaEngineProtocol.YJAskNextMoveAnswer nextMoveAnswer;
+        YokaiJavaEngineProtocol.YJNewGameRequest newGameRequest;
+        YokaiJavaEngineProtocol.YJNewGameAnswer newGameAnswer;
+        YokaiJavaEngineProtocol.YJMoveAnswer moveAnswer;
+        YokaiJavaEngineProtocol.YJSendPlaceRequest placeRequest;
+        YokaiJavaEngineProtocol.YJPlaceAnswer placeAnswer;
+        YokaiJavaEngineProtocol.YJPlateau plateau = null;
+
+        byte[] b = new byte[24];
         ByteBuffer buff = ByteBuffer.wrap(b);
         buff.order(ByteOrder.LITTLE_ENDIAN);
-        int id = buff.getInt();
-        int sens = buff.getInt();
+        int id;
 
-        return new YokaiJavaEngineProtocol.YJNewGameRequest(
-                YokaiJavaEngineProtocol.YJRequestID.values()[id],
-                YokaiJavaEngineProtocol.YJSensPiece.values()[sens]);
+        try {
+            do{
+                dis.read(b);
+                id = buff.getInt();
+                switch(YokaiJavaEngineProtocol.YJRequestID.values()[id]){
+                    case YJ_NEW_GAME :
+                        int sens = buff.getInt(4);
+                        newGameRequest =  new YokaiJavaEngineProtocol.YJNewGameRequest(
+                                YokaiJavaEngineProtocol.YJRequestID.values()[id],
+                                YokaiJavaEngineProtocol.YJSensPiece.values()[sens]);
+                        plateau = new YokaiJavaEngineProtocol.YJPlateau(newGameRequest.sens);
+                        newGameAnswer = new YokaiJavaEngineProtocol.YJNewGameAnswer(YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS);
+
+                        sendInitAnswer(dos,newGameAnswer);
+                        break;
+                    case YJ_SEND_MOVE:
+                        int moveType = buff.getInt(4);
+                        if(YokaiJavaEngineProtocol.YJMoveType.values()[moveType] == YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE){//si c'est un movement adverse
+                            int fromCol = buff.getInt(8);
+                            int fromLine = buff.getInt(12);
+                            int toCol = buff.getInt(16);
+                            int toLine = buff.getInt(20);
+                            YokaiJavaEngineProtocol.YJCase from = new YokaiJavaEngineProtocol.YJCase(fromCol,fromLine);
+                            YokaiJavaEngineProtocol.YJCase to = new YokaiJavaEngineProtocol.YJCase(toCol,toLine);
+
+                            /*moveRequest = new YokaiJavaEngineProtocol.YJSendMoveRequest(
+                                    YokaiJavaEngineProtocol.YJRequestID.values()[id],
+                                    YokaiJavaEngineProtocol.YJMoveType.values()[moveType],
+                                    from,
+                                    to);*/
+
+                            plateau.plateauMove(from,to);
+                            moveAnswer = new YokaiJavaEngineProtocol.YJMoveAnswer(YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS);
+                            sendMoveAnswer(dos,moveAnswer);
+
+                        }else{ //si c'est un placement adverse
+                            int piece = buff.getInt(8);
+                            int cellCol = buff.getInt(12);
+                            int cellLine = buff.getInt(16);
+
+                            YokaiJavaEngineProtocol.YJCase cell = new YokaiJavaEngineProtocol.YJCase(cellCol, cellLine);
+
+                            placeRequest = new YokaiJavaEngineProtocol.YJSendPlaceRequest(
+                                    YokaiJavaEngineProtocol.YJRequestID.values()[id],
+                                    YokaiJavaEngineProtocol.YJMoveType.values()[moveType],
+                                    YokaiJavaEngineProtocol.YJPiece.values()[piece],
+                                    cell
+                            );
+                        }
+                        break;
+                    case YJ_ASK_MOVE:
+                        nextMoveAnswer = requestProlog(sp, plateau);
+                        sendNextCoupAnswer(dos, nextMoveAnswer);
+                        break;
+                }
+            }while (YokaiJavaEngineProtocol.YJRequestID.values()[id] == YokaiJavaEngineProtocol.YJRequestID.YJ_FIN);
+        }
+        catch (IOException e) {
+            System.err.println("Exception dans un send ou un recv : " + e);//plus tard fair une exception dans chaque send et recv
+            e.printStackTrace();
+            System.exit(-2);
+        }
     }
 
     public static void sendInitAnswer(DataOutputStream dos, YokaiJavaEngineProtocol.YJNewGameAnswer NewGameAnswer) throws IOException{
         ByteBuffer buff = ByteBuffer.allocate(4);
         buff.order(ByteOrder.LITTLE_ENDIAN);
-        buff.putInt(NewGameAnswer.returnCode.ordinal());
+        buff.putInt(convertReturnCode(NewGameAnswer.returnCode.ordinal()));
         dos.write(buff.array());
-    }
-
-    public static YokaiJavaEngineProtocol.YJSendMoveRequest recvMoveRequest(DataInputStream dis) throws IOException{
-        byte[] b = new byte[24];
-        dis.read(b);
-        ByteBuffer buff = ByteBuffer.wrap(b);
-        buff.order(ByteOrder.LITTLE_ENDIAN);
-        int id = buff.getInt();
-        int moveType = buff.getInt(4);
-        int fromCol = buff.getInt(8);
-        int fromLine = buff.getInt(12);
-        int toCol = buff.getInt(16);
-        int toLine = buff.getInt(20);
-
-        YokaiJavaEngineProtocol.YJCase from = new YokaiJavaEngineProtocol.YJCase(fromCol,fromLine);
-        YokaiJavaEngineProtocol.YJCase to = new YokaiJavaEngineProtocol.YJCase(toCol,toLine);
-
-        return new YokaiJavaEngineProtocol.YJSendMoveRequest(
-                YokaiJavaEngineProtocol.YJRequestID.values()[id],
-                YokaiJavaEngineProtocol.YJMoveType.values()[moveType],
-                from,
-                to);
     }
 
     public static void sendMoveAnswer(DataOutputStream dos, YokaiJavaEngineProtocol.YJMoveAnswer moveAnswer) throws IOException{
         ByteBuffer buff = ByteBuffer.allocate(4);
         buff.order(ByteOrder.LITTLE_ENDIAN);
-        buff.putInt(moveAnswer.returnCode.ordinal());
+        buff.putInt(convertReturnCode(moveAnswer.returnCode.ordinal()));
         dos.write(buff.array());
 
-    }
-
-    public static YokaiJavaEngineProtocol.YJSendPlaceRequest recvPlaceRequest(DataInputStream dis) throws IOException{
-        byte[] b = new byte[20];
-        dis.read(b);
-        ByteBuffer buff = ByteBuffer.wrap(b);
-        buff.order(ByteOrder.LITTLE_ENDIAN);
-        int id = buff.getInt();
-        int moveType = buff.getInt(4);
-        int piece = buff.getInt(8);
-        int cellCol = buff.getInt(12);
-        int cellLine = buff.getInt(16);
-
-        YokaiJavaEngineProtocol.YJCase cell = new YokaiJavaEngineProtocol.YJCase(cellCol, cellLine);
-
-        return new YokaiJavaEngineProtocol.YJSendPlaceRequest(
-                YokaiJavaEngineProtocol.YJRequestID.values()[id],
-                YokaiJavaEngineProtocol.YJMoveType.values()[moveType],
-                YokaiJavaEngineProtocol.YJPiece.values()[piece],
-                cell
-        );
     }
 
     public static void sendPlaceAnswer(DataOutputStream dos, YokaiJavaEngineProtocol.YJPlaceAnswer placeAnswer) throws IOException{
         ByteBuffer buff = ByteBuffer.allocate(4);
         buff.order(ByteOrder.LITTLE_ENDIAN);
-        buff.putInt(placeAnswer.returnCode.ordinal());
+        buff.putInt(convertReturnCode(placeAnswer.returnCode.ordinal()));
         dos.write(buff.array());
 
-    }
-
-    public static YokaiJavaEngineProtocol.YJAskNextMoveRequest recvNextCoupRequest(DataInputStream dis) throws IOException{
-        byte[] b = new byte[4];
-        dis.read(b);
-        ByteBuffer buff = ByteBuffer.wrap(b);
-        buff.order(ByteOrder.LITTLE_ENDIAN);
-        int id = buff.getInt();
-
-        return new YokaiJavaEngineProtocol.YJAskNextMoveRequest(
-                YokaiJavaEngineProtocol.YJRequestID.values()[id]
-        );
     }
 
     public static void sendNextCoupAnswer(DataOutputStream dos, YokaiJavaEngineProtocol.YJAskNextMoveAnswer nextMoveAnswer) throws IOException{
         ByteBuffer buff = ByteBuffer.allocate(4);
         buff.order(ByteOrder.LITTLE_ENDIAN);
-        buff.putInt(nextMoveAnswer.returnCode.ordinal());
+        buff.putInt(convertReturnCode(nextMoveAnswer.returnCode.ordinal()));
         buff.putInt(nextMoveAnswer.moveType.ordinal());
         buff.putInt(nextMoveAnswer.piece.ordinal());
         buff.putInt(nextMoveAnswer.sens.ordinal());
@@ -172,81 +182,94 @@ public class JavaEngine {
 
     }
 
-    public static void requetProlog(SICStus sp){
+    public static int convertReturnCode(int returnCode){
+        int codeConvert;
 
-        String saisie = new String("");
-        // lecture au clavier d'une requète Prolog
-        System.out.print("| ?- ");
-        saisie = saisieClavier();
-
-        // boucle pour saisir les informations
-        while (! saisie.equals("halt.")) {
-
-            // HashMap utilisé pour stocker les solutions
-            HashMap results = new HashMap();
-
-            try {
-
-                // Creation d'une requete (Query) Sicstus
-                //   - en fonction de la saisie de l'utilisateur
-                //   - instanciera results avec les résultats de la requète
-                Query qu = sp.openQuery(saisie,results);
-
-                // parcours des solutions
-                boolean moreSols = qu.nextSolution();
-
-                // on ne boucle que si la liste des instanciations de variables est non vide
-                boolean continuer = !(results.isEmpty());
-
-                while (moreSols && continuer) {
-
-                    // chaque solution est sockée dans un HashMap
-                    // sous la forme : VariableProlog -> Valeur
-                    System.out.print(results + " ? ");
-
-                    // demande à l'utilisateur de continuer ...
-                    saisie = saisieClavier();
-                    if (saisie.equals(";")) {
-                        // solution suivante --> results contient la nouvelle solution
-                        moreSols = qu.nextSolution();
-                    }
-                    else {
-                        continuer = false;
-                    }
-                }
-
-                if (moreSols) {
-                    // soit :
-                    //  - il y a encore des solutions et (continuer == false)
-                    //  - le prédicat a réussi mais (results.isEmpty() == true)
-                    System.out.println("yes");
-                }
-                else {
-                    // soit :
-                    //    - on est à la fin des solutions
-                    //    - il n'y a pas de solutions (le while n'a pas été exécuté)
-                    System.out.println("no");
-                }
-
-                // fermeture de la requète
-                System.err.println("Fermeture requete");
-                qu.close();
-
-            }
-            catch (SPException e) {
-                System.err.println("Exception prolog\n" + e);
-            }
-            // autres exceptions levées par l'utilisation du Query.nextSolution()
-            catch (Exception e) {
-                System.err.println("Other exception : " + e);
-            }
-
-            System.out.print("| ?- ");
-            // lecture au clavier
-            saisie = saisieClavier();
+        switch(returnCode){
+            case -1 : codeConvert=1;
+                break;
+            case -2 : codeConvert=2;
+                break;
+            case -3 : codeConvert=3;
+                break;
+            case -4 : codeConvert=4;
+                break;
+            case -5 : codeConvert=5;
+                break;
+            case 1 : codeConvert=-1;
+                break;
+            case 2 : codeConvert=-2;
+                break;
+            case 3 : codeConvert=-3;
+                break;
+            case 4 : codeConvert=-4;
+                break;
+            case 5 : codeConvert=-5;
+                break;
+            default : codeConvert = returnCode;
         }
-        System.out.println("End of jSicstus");
-        System.out.println("Bye bye");
+
+        return codeConvert;
+    }
+
+    private static YokaiJavaEngineProtocol.YJAskNextMoveAnswer requestProlog(SICStus sp, YokaiJavaEngineProtocol.YJPlateau plateau){
+
+        // HashMap utilisé pour stocker les solutions
+        HashMap results = new HashMap();
+
+        try {
+
+            // Creation d'une requete (Query) Sicstus
+            //   - instanciera results avec les résultats de la requète (from et to)
+            Query qu = sp.openQuery("recuperer_meilleur_coup_v1(["+plateau.toString()+"],moi,From,To).",results);
+
+            qu.close();
+            // parcours des solutions
+            qu.nextSolution();
+            int from = (int)results.get("From");
+            int to = (int)results.get("To");
+            YokaiJavaEngineProtocol.YJPiece piece = null;
+            switch(plateau.plateau[from][0]){
+                case "oni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_ONI;
+                    break;
+                case "kirin" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KIRIN;
+                    break;
+                case "kodama" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KODAMA;
+                    break;
+                case "kodamasamourai" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KODAMA_SAMOURAI;
+                    break;
+                case "koropokkuru" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KOROPOKKURU;
+                    break;
+                case "superoni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_SUPER_ONI;
+                    break;
+            }
+            YokaiJavaEngineProtocol.YJCase caseFrom = plateau.plateauToCase(from);
+            YokaiJavaEngineProtocol.YJCase caseTo = plateau.plateauToCase(to);
+            plateau.plateauMove(from,to);
+            return new YokaiJavaEngineProtocol.YJAskNextMoveAnswer(
+                    YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS,
+                    YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE,
+                    piece,
+                    plateau.getSensActuel(),
+                    0,
+                    caseFrom,
+                    caseTo);
+        }
+        catch (SPException e) {
+            System.err.println("Exception prolog\n" + e);
+        }
+        // autres exceptions levées par l'utilisation du Query.nextSolution()
+        catch (Exception e) {
+            System.err.println("Other exception : " + e);
+        }
+        return new YokaiJavaEngineProtocol.YJAskNextMoveAnswer(
+                YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SEND_MOVE,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null);
     }
 
     public static String saisieClavier() {
