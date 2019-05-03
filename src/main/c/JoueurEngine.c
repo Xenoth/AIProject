@@ -60,20 +60,32 @@ int updateJoueur(JoueurState *state)
 
         case START_FIRST_GAME:
 
+            newGameRequest.id = YJ_NEW_GAME;
+
             if(state->sens == NORD)
                 newGameRequest.sens = YJ_NORD;
 
             else
                 newGameRequest.sens = YJ_SUD;
+            printf("Sending Init Request...");
 
             if(sendInitRequestToJavaServer(state, newGameRequest) < 0 )
                 return crash(state);
 
+
+            printf("Init Request sended\nReceivingAnswer\n");
+
             if(receiveInitAnswerFromJavaServer(state, &newGameAnswer) < 0)
                 return crash(state);
 
+
+            printf("Answer Received...");
+
             if(newGameAnswer.returnCode != YJ_ERR_SUCCESS)
                 return crash(state);
+
+
+            printf("Next Turn...");
 
             if(state->sens == SUD)
                 state->step = PLAY_TURN;
@@ -83,6 +95,8 @@ int updateJoueur(JoueurState *state)
 
         case START_SECOND_GAME:
             state->nbMoves = 0;
+
+            newGameRequest.id = YJ_NEW_GAME;
 
             if(state->sens == NORD)
                 newGameRequest.sens = YJ_NORD;
@@ -285,8 +299,13 @@ int sendInitRequestToJavaServer(JoueurState *state, YJNewGameRequest newGameRequ
     int32_t id = intToInt32bJava(newGameRequest.id);
     int32_t faction = intToInt32bJava(newGameRequest.sens);
 
+    printf("\n\nSending id: %d\n\n", id);
+
     if(sendInt32b(state, id) <= 0)
         return -1;
+
+
+    printf("\n\nSending faction\n\n");
 
     if(sendInt32b(state, faction) <= 0)
         return -1;
