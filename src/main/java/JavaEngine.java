@@ -74,18 +74,14 @@ public class JavaEngine {
         YokaiJavaEngineProtocol.YJPlaceAnswer placeAnswer;
         YokaiJavaEngineProtocol.YJPlateau plateau = null;
 
-        byte[] b = new byte[24];
-        ByteBuffer buff = ByteBuffer.wrap(b);
-        buff.order(ByteOrder.LITTLE_ENDIAN);
         int id;
 
         try {
             do{
-                dis.read(b);
-                id = buff.getInt();
+                id = dis.readInt();
                 switch(YokaiJavaEngineProtocol.YJRequestID.values()[id]){
                     case YJ_NEW_GAME :
-                        int sens = buff.getInt(4);
+                        int sens = dis.readInt();
                         newGameRequest =  new YokaiJavaEngineProtocol.YJNewGameRequest(
                                 YokaiJavaEngineProtocol.YJRequestID.values()[id],
                                 YokaiJavaEngineProtocol.YJSensPiece.values()[sens]);
@@ -95,12 +91,12 @@ public class JavaEngine {
                         sendInitAnswer(dos,newGameAnswer);
                         break;
                     case YJ_SEND_MOVE:
-                        int moveType = buff.getInt(4);
+                        int moveType = dis.readInt();;
                         if(YokaiJavaEngineProtocol.YJMoveType.values()[moveType] == YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE){//si c'est un movement adverse
-                            int fromCol = buff.getInt(8);
-                            int fromLine = buff.getInt(12);
-                            int toCol = buff.getInt(16);
-                            int toLine = buff.getInt(20);
+                            int fromCol = dis.readInt();
+                            int fromLine = dis.readInt();
+                            int toCol = dis.readInt();
+                            int toLine = dis.readInt();
                             YokaiJavaEngineProtocol.YJCase from = new YokaiJavaEngineProtocol.YJCase(fromCol,fromLine);
                             YokaiJavaEngineProtocol.YJCase to = new YokaiJavaEngineProtocol.YJCase(toCol,toLine);
 
@@ -115,9 +111,9 @@ public class JavaEngine {
                             sendMoveAnswer(dos,moveAnswer);
 
                         }else{ //si c'est un placement adverse
-                            int piece = buff.getInt(8);
-                            int cellCol = buff.getInt(12);
-                            int cellLine = buff.getInt(16);
+                            int piece = dis.readInt();
+                            int cellCol = dis.readInt();
+                            int cellLine = dis.readInt();
 
                             YokaiJavaEngineProtocol.YJCase cell = new YokaiJavaEngineProtocol.YJCase(cellCol, cellLine);
 

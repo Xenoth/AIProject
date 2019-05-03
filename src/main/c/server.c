@@ -1,6 +1,9 @@
-#include "../protocol/c/fonctionsTCP.h"
-#include "../protocol/c/validation.h"
-#include "../protocol/c/protocoleYokai.h"
+/*#include "../../lib/c/SCS-Lib/fonctionsTCP.h"
+#include "../../protocol/c/validation.h"
+#include "../../protocol/c/protocoleYokai.h"*/
+#include "src/lib/c/SCS-Lib/fonctionsTCP.h"
+#include "Ref/validation.h"
+#include "src/protocol/c/protocoleYokai.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -13,9 +16,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define TIME_MAX 6
+
 int ndfs,
 	port,
 	numPartie,
+	firstSend = 0,
 	err,
 	jG1,
 	jG2,
@@ -81,8 +87,13 @@ int main(int argc, char **argv)
      	//recupération des deux requète partieReq
      	receptReqPartie();
      	//ordre des joueurs
-    	joueur1=&sock_transJ1;
-    	joueur2=&sock_transJ2;
+     	if(firstSend == 1){
+            joueur1=&sock_transJ1;
+            joueur2=&sock_transJ2;
+        }else{
+            joueur2=&sock_transJ1;
+            joueur1=&sock_transJ2;
+        }
      	//envoie réponse pour les demande de partie
      	sendRepPartie();
 
@@ -104,59 +115,69 @@ int main(int argc, char **argv)
 
 void receptReqPartie(){
 	int recved = 0;
+	err = select(ndfs, &readSet, NULL, NULL, NULL);
+	if(err<0){closeSock();}
 	//Reception de la première requête Partie
-	while(recved < sizeof(TPartieReq)){
-		err = recv(sock_transJ1, &parReqJ1, sizeof(TPartieReq), 0);
-		if (err < 0) {
-			perror("serveur: erreur dans la reception (J1 : sock_transJ1)");
-			closeSock();
-		}
-		recved += err;
-		printf("recu partie j1 : %d/%ld\n",recved,sizeof(TPartieReq));
-	}
+	if(FD_ISSET(sock_transJ1,&readSet) != 0){
+	    if(firstSend == 0){
+	        firstSend = 1;
+	    }
+        while(recved < sizeof(TPartieReq)){
+            err = recv(sock_transJ1, &parReqJ1, sizeof(TPartieReq), 0);
+            if (err < 0) {
+                perror("serveur: erreur dans la reception (J1 : sock_transJ1)");
+                closeSock();
+            }
+            recved += err;
+            printf("recu partie j1 : %d/%ld\n",recved,sizeof(TPartieReq));
+        }
+    }
 	recved = 0;
 	//Reception de la deuxième requête Partie
-	while(recved < sizeof(TPartieReq)){
-		err = recv(sock_transJ2, &parReqJ2, sizeof(TPartieReq), 0);
-		if (err < 0 && parReqJ1.idReq == PARTIE) {
-			perror("serveur: erreur dans la reception (J2 : sock_transJ2)");
-			closeSock();
-		}
-		recved += err;
-		printf("recu partie j2 : %d/%ld\n",recved,sizeof(TPartieReq));
-	}
+	if(FD_ISSET(sock_transJ2,&readSet) != 0){
+	    if(firstSend == 0){
+	        firstSend = 2;
+	    }
+        while(recved < sizeof(TPartieReq)){
+            err = recv(sock_transJ2, &parReqJ2, sizeof(TPartieReq), 0);
+            if (err < 0 && parReqJ1.idReq == PARTIE) {
+                perror("serveur: erreur dans la reception (J2 : sock_transJ2)");
+                closeSock();
+            }
+            recved += err;
+            printf("recu partie j2 : %d/%ld\n",recved,sizeof(TPartieReq));
+        }
+    }
 }
 
 int sendRepPartie(){
 	//Création des réponses Partie
-	if (parReqJ1.idReq != PARTIE){
-		parRepJ2.err = ERR_TYP;
+	if (parReqJ1.idReq != PARTIE || parReqJ2.idReq != PARTIE){
 		parRepJ2.nomAdvers[0] = '\0';
 		parRepJ2.validSensTete = KO;
-	}else{
-		parRepJ2.err = ERR_OK;
-		printf("nom J1 : %s\n",parReqJ1.nomJoueur);
-		strcpy(nomJ1, parReqJ1.nomJoueur);
-		strcpy(parRepJ2.nomAdvers, nomJ1);
-		if(parReqJ1.pion == parReqJ2.pion){
-		printf("pion parReqJ1 == KO\n");
-			parRepJ2.validCoul = KO;
-		}else{
-		printf("pion parReqJ1 == OK\n");
-			parRepJ2.validCoul = OK;
-		}
-	}
-	if (parReqJ2.idReq != PARTIE){
-		parRepJ1.err = ERR_TYP;
 		parRepJ1.nomAdvers[0] = '\0';
 		parRepJ1.validSensTete = KO;
+        parRepJ2.err = ERR_TYP;
+        parRepJ1.err = ERR_TYP;
+	    if(parReqJ1.idReq != PARTIE){
+            parRepJ2.err = ERR_PARTIE;
+        }
+	    if(parReqJ2.idReq != PARTIE){
+            parRepJ1.err = ERR_PARTIE;
+        }
 	}else{
+	    //création reponse j1
 		parRepJ1.err = ERR_OK;
 		printf("nom J2 : %s\n",parReqJ2.nomJoueur);
 		strcpy(nomJ2, parReqJ2.nomJoueur);
 		strcpy(parRepJ1.nomAdvers, nomJ2);
-		printf("pion parReqJ2 == OK\n");
-		parRepJ1.validCoul = OK;
+		parRepJ1.validSensTete = OK;
+	    //création reponse j2
+		parRepJ2.err = ERR_OK;
+		printf("nom J1 : %s\n",parReqJ1.nomJoueur);
+		strcpy(nomJ1, parReqJ1.nomJoueur);
+		strcpy(parRepJ2.nomAdvers, nomJ1);
+		parRepJ2.validSensTete = KO;
 	}
 
 	//Envoie des réponse Partie
@@ -249,6 +270,7 @@ int receptReqCoup(int joueur){
 		}
 		//Validation du coup
 		valide = validationCoup(joueur, coupReq, &coupRep.propCoup);
+		coupRep.err = ERR_OK;
 		if(valide){
 			coupRep.validCoup = VALID;
 		}else{
@@ -269,11 +291,10 @@ int receptReqCoup(int joueur){
 		}
 		//Validation du coup
 		valide = validationCoup(joueur, coupReq, &coupRep.propCoup);
+	    coupRep.err = ERR_OK;
 		if(valide){
-			coupRep.err = ERR_OK;
 			coupRep.validCoup = VALID;
 		}else{
-			coupRep.err = ERR_OK;
 			coupRep.validCoup = TRICHE;
 		}
 		joueur = 1;
