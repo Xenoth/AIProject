@@ -79,6 +79,7 @@ public class JavaEngine {
         try {
             do{
                 id = dis.readInt();
+                System.out.println("JAVa\t id = " + id);
                 switch(YokaiJavaEngineProtocol.YJRequestID.values()[id]){
                     case YJ_NEW_GAME :
                         int sens = dis.readInt();
@@ -130,7 +131,7 @@ public class JavaEngine {
                         sendNextCoupAnswer(dos, nextMoveAnswer);
                         break;
                 }
-            }while (YokaiJavaEngineProtocol.YJRequestID.values()[id] == YokaiJavaEngineProtocol.YJRequestID.YJ_FIN);
+            }while (YokaiJavaEngineProtocol.YJRequestID.values()[id] != YokaiJavaEngineProtocol.YJRequestID.YJ_FIN);
         }
         catch (IOException e) {
             System.err.println("Exception dans un send ou un recv : " + e);//plus tard fair une exception dans chaque send et recv
@@ -163,18 +164,53 @@ public class JavaEngine {
     }
 
     public static void sendNextCoupAnswer(DataOutputStream dos, YokaiJavaEngineProtocol.YJAskNextMoveAnswer nextMoveAnswer) throws IOException{
+
         ByteBuffer buff = ByteBuffer.allocate(4);
-        buff.order(ByteOrder.LITTLE_ENDIAN);
-        buff.putInt(convertReturnCode(nextMoveAnswer.returnCode.ordinal()));
-        buff.putInt(nextMoveAnswer.moveType.ordinal());
-        buff.putInt(nextMoveAnswer.piece.ordinal());
-        buff.putInt(nextMoveAnswer.sens.ordinal());
-        buff.putInt(nextMoveAnswer.capture);
-        buff.putInt(nextMoveAnswer.from.Col);
-        buff.putInt(nextMoveAnswer.from.Line);
-        buff.putInt(nextMoveAnswer.to.Col);
-        buff.putInt(nextMoveAnswer.to.Line);
-        dos.write(buff.array());
+        byte[] b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.returnCode.ordinal())).array();
+
+        dos.write(b);
+
+        System.out.println("\n\nJAVA\tmovetype = " + nextMoveAnswer.moveType);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.moveType.ordinal()).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.piece.ordinal())).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.sens.ordinal())).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.capture).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.from.Col)).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.from.Line)).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.to.Col)).array();
+
+        dos.write(b);
+
+        buff = ByteBuffer.allocate(4);
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.to.Line)).array();
+
+        dos.write(b);
 
     }
 
