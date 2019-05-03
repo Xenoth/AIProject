@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <afxres.h>
+#include <netinet/in.h>
 #include "YokaiJavaEngineProtocol.h"
 
 int32_t intToInt32bJava(const int something)

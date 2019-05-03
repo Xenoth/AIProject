@@ -25,6 +25,7 @@ enum JoueurStep_type {
 struct t_joueur_state {
 
     enum JoueurStep_type step;
+    enum JoueurStep_type crashedFromStep;
 
     char *name;
 
@@ -180,6 +181,8 @@ int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMo
  * @return
  */
 int shutdownAndCloseSockets(JoueurState *state);
+
+int crash(JoueurState *state);
 
 int sendInt32b(JoueurState *state, int32_t something);
 int receiveByteBufferFromJavaEngine(JoueurState *state, char *buff);

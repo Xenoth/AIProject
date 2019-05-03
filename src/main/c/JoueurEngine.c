@@ -1,4 +1,3 @@
-#include <afxres.h>
 #include "JoueurEngine.h"
 
 int initJoueur(JoueurState *state, char *name, TSensTetePiece desiredSensToStart, char *nameServerC, unsigned short portServerC, char *nameServerJava,
@@ -18,32 +17,49 @@ int initJoueur(JoueurState *state, char *name, TSensTetePiece desiredSensToStart
 
 int updateJoueur(JoueurState *state)
 {
+
+    YJNewGameRequest newGameRequest;
+    YJNewGameAnswer newGameAnswer;
+
+    YJAskNextMoveRequest askNextMoveRequest;
+    YJAskNextMoveAnswer askNextMoveAnswer;
+
+    YJSendMoveRequest sendMoveRequest;
+    YJMoveAnswer moveAnswer;
+
+    YJSendPlaceRequest sendPlaceRequest;
+    YJPlaceAnswer placeAnswer;
+
+    TCoupReq coupReq;
+    TCoupRep coupRep;
+
+    TPartieRep partieRep;
+
+
     switch (state->step) {
         case INIT:
             if(sendPartieRequestToServerC(state) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
-            TPartieRep partieRep;
             if (receivePartieAnswerFromServerC(state, &partieRep) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
-            if(partieRep.validSensTete == 0K)
+                return crash(state);
+
+            if(partieRep.validSensTete == OK)
                 state->sens = state->desiredSensToStart;
             else
-                (state->desiredSensToStart == NORD? state->sens = SUD: state->sens = NORD);
+            {
+                if(state->desiredSensToStart == NORD)
+                    state->sens = SUD;
+                else
+                    state->sens = NORD;
+
+            }
 
             state->step = START_FIRST_GAME;
             break;
 
         case START_FIRST_GAME:
 
-
-            YJNewGameRequest newGameRequest;
             if(state->sens == NORD)
                 newGameRequest.sens = YJ_NORD;
 
@@ -51,23 +67,14 @@ int updateJoueur(JoueurState *state)
                 newGameRequest.sens = YJ_SUD;
 
             if(sendInitRequestToJavaServer(state, newGameRequest) < 0 )
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
-            YJNewGameAnswer newGameAnswer;
             if(receiveInitAnswerFromJavaServer(state, &newGameAnswer) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
             if(newGameAnswer.returnCode != YJ_ERR_SUCCESS)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
+
             if(state->sens == SUD)
                 state->step = PLAY_TURN;
             else
@@ -77,30 +84,20 @@ int updateJoueur(JoueurState *state)
         case START_SECOND_GAME:
             state->nbMoves = 0;
 
-            YJNewGameRequest newGameRequest2;
             if(state->sens == NORD)
-                newGameRequest2.sens = YJ_NORD;
+                newGameRequest.sens = YJ_NORD;
 
             else
-                newGameRequest2.sens = YJ_SUD;
+                newGameRequest.sens = YJ_SUD;
 
-            if (sendInitRequestToJavaServer(state, newGameRequest2) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
-            YJNewGameAnswer newGameAnswer2;
-            if(receiveInitAnswerFromJavaServer(state, &newGameAnswer2) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+            if (sendInitRequestToJavaServer(state, newGameRequest) < 0)
+                return crash(state);
 
-            if(newGameAnswer2.returnCode != YJ_ERR_SUCCESS)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+            if(receiveInitAnswerFromJavaServer(state, &newGameAnswer) < 0)
+                return crash(state);
+
+            if(newGameAnswer.returnCode != YJ_ERR_SUCCESS)
+                return crash(state);
 
             if(state->sens == SUD)
                 state->step = WAIT_TURN;
@@ -110,36 +107,22 @@ int updateJoueur(JoueurState *state)
 
         case PLAY_TURN:
 
-            YJAskNextMoveRequest askNextMoveRequest;
             askNextMoveRequest.id = YJ_ASK_MOVE;
 
             if(askNextCoupToJavaServer(state, askNextMoveRequest) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
-            YJAskNextMoveAnswer askNextMoveAnswer;
             if(getNextCoupFromJavaServer(state, &askNextMoveAnswer) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
             //TODO handle nextMove potential errors
 
-            TCoupReq coupReq = YJAskNextMoveAnswer2TCoupReq(askNextMoveAnswer, state->nbGames);
+            coupReq = YJAskNextMoveAnswer2TCoupReq(askNextMoveAnswer, state->nbGames);
             if (sendCoupRequestToServerC(state, coupReq) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
-            TCoupRep coupRep;
+                return crash(state);
+
             if (receiveCoupAnswerFromServerC(state, &coupRep) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
             state->nbMoves++;
 
@@ -148,35 +131,24 @@ int updateJoueur(JoueurState *state)
                 state->step = END_GAME;
 
             // TODO For now we only move pieces, no place Request needed
-            YJSendMoveRequest sendMoveRequest = TCoupReq2YJSendMoveRequest(coupReq);
+            sendMoveRequest = TCoupReq2YJSendMoveRequest(coupReq);
             if (sendMoveRequestToJavaServer(state, sendMoveRequest) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
-            YJMoveAnswer moveAnswer;
+
             if(receiveMoveAnswerFromJavaServer(state, &moveAnswer) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
 
             if(moveAnswer.returnCode != YJ_ERR_SUCCESS)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
+
             state->step = WAIT_TURN;
             break;
 
         case WAIT_TURN:
-            TCoupRep coupRep;
             if(receiveCoupAnswerFromServerC(state, &coupRep) < 0)
-            {
-                state->step = END_ERROR;
-                return -1;
-            }
+                return crash(state);
+
             state->nbMoves ++;
 
             if(coupRep.propCoup != CONT) {
@@ -184,56 +156,33 @@ int updateJoueur(JoueurState *state)
                 break;
             }
 
-            TCoupReq coupReq1;
-            if (receiveCoupReqFromServerC(state, &coupReq1) < 0)
+            if (receiveCoupReqFromServerC(state, &coupReq) < 0)
+                return crash(state);
+
+            if(coupReq.typeCoup == DEPLACER)
             {
-                state->step = END_ERROR;
-                return -1;
-            }
+                sendMoveRequest = TCoupReq2YJSendMoveRequest(coupReq);
+                if(sendMoveRequestToJavaServer(state, sendMoveRequest) < 0)
+                    return crash(state);
 
-            if(coupReq1.typeCoup == DEPLACER)
-            {
-                YJSendMoveRequest sendMoveRequest1 = TCoupReq2YJSendMoveRequest(coupReq1);
-                if(sendMoveRequestToJavaServer(state, sendMoveRequest1) < 0)
-                {
-                    state->step = END_ERROR;
-                    return -1;
-                }
+                if(receiveMoveAnswerFromJavaServer(state, &moveAnswer) < 0)
+                    return crash(state);
 
-                YJMoveAnswer moveAnswer1;
-                if(receiveMoveAnswerFromJavaServer(state, &moveAnswer1) < 0)
-                {
-                    state->step = END_ERROR;
-                    return -1;
-                }
+                if(moveAnswer.returnCode != YJ_ERR_SUCCESS)
+                    return crash(state);
 
-                if(moveAnswer1.returnCode != YJ_ERR_SUCCESS)
-                {
-                    state->step = END_ERROR;
-                    return -1;
-                }
             }
             else
             {
-                YJSendPlaceRequest sendPlaceRequest = TCoupReq2YJSendPlaceRequest(coupReq1);
+                sendPlaceRequest = TCoupReq2YJSendPlaceRequest(coupReq);
                 if(sendPlaceRequestToJavaServer(state, sendPlaceRequest) < 0)
-                {
-                    state->step = END_ERROR;
-                    return -1;
-                }
+                    return crash(state);
 
-                YJPlaceAnswer placeAnswer;
                 if(receivePlaceAnswerFromJavaServer(state, &placeAnswer) < 0)
-                {
-                    state->step = END_ERROR;
-                    return -1;
-                }
+                    return crash(state);
 
                 if(placeAnswer.returnCode != YJ_ERR_SUCCESS)
-                {
-                    state->step = END_ERROR;
-                    return -1;
-                }
+                    return crash(state);
             }
 
             state->step = PLAY_TURN;
@@ -290,7 +239,7 @@ int sendPartieRequestToServerC(JoueurState *state)
 {
     TPartieReq partieReq;
     partieReq.piece = state->desiredSensToStart;
-    partieReq.nomJoueur = state->name;
+    strcpy(partieReq.nomJoueur, state->name);
     partieReq.idReq = PARTIE;
 
     if (send(state->socketC, &partieReq, sizeof(TPartieReq), 0) <= 0)
@@ -325,7 +274,7 @@ int receiveCoupAnswerFromServerC(JoueurState *state, TCoupRep *coupRep)
 
 int receiveCoupReqFromServerC(JoueurState *state, TCoupReq *coupReq)
 {
-    if (recv(state->socketC, coupReq, sizeof(TCoupRep), 0) <= 0)
+    if (recv(state->socketC, coupReq, sizeof(TCoupReq), 0) <= 0)
         return -1;
 
     return 0;
@@ -488,6 +437,13 @@ int shutdownAndCloseSockets(JoueurState *state)
     return 0;
 }
 
+int crash(JoueurState *state)
+{
+    state->crashedFromStep = state->step;
+    state->step = END_ERROR;
+    return -1;
+}
+
 int sendInt32b(JoueurState *state, int32_t something)
 {
     if (send(state->socketJava, &something, sizeof(int32_t), 0) <= 0)
@@ -550,8 +506,6 @@ TCoupReq YJAskNextMoveAnswer2TCoupReq(YJAskNextMoveAnswer askNextMoveAnswer, uin
         case YJ_SUPER_ONI:
             piece = SUPER_ONI;
             break;
-        default:
-            piece = NULL;
     }
 
     coupReq.piece.typePiece = piece;

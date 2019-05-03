@@ -15,10 +15,9 @@ file(GLOB LIB_HEADERS src/lib/c/SCS-Lib/*.h)
 add_library(SCS-Lib ${LIB_SOURCES} ${LIB_HEADERS})
 
 # Executables
-add_executable(joueur src/main/c/joueur.c src/protocol/c/protocolYokai.h src/protocol/c/YokaiJavaEngineProtocol.h src/protocol/c/YokaiJavaEngineProtocol.c)
-add_executable(NewJoueur src/main/c/joueur.c src/main/c/JoueurEngine.c)
-add_executable(serveur src/main/c/server.c)
+add_executable(joueur src/main/c/joueur.c src/main/c/JoueurEngine.h src/main/c/JoueurEngine.c src/protocol/c/protocolYokai.h src/protocol/c/YokaiJavaEngineProtocol.h src/protocol/c/YokaiJavaEngineProtocol.c)
+# add_executable(serveur src/main/c/server.c)
 
 ## Linking executables and libs
 target_link_libraries(joueur SCS-Lib)
-target_link_libraries(serveur SCS-Lib)
+# target_link_libraries(serveur SCS-Lib)
