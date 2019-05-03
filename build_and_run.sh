@@ -3,8 +3,9 @@
 C_SERVER_NAME=0.0.0.0
 JAVA_SERVER_NAME=0.0.0.0
 
-C_SERVER_PORT=1075
-JAVA_SERVER_PORT=1076
+C_SERVER_PORT=1095
+JAVA_SERVER_PORT=1096
+JAVA_SERVER_PORT2=1097
 
 if [[ $# != 2 ]]
 then
@@ -59,8 +60,9 @@ javac -cp $2 -d build src/main/java/*.java
 echo "RUNNING..."
 
 java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT} &
+java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT2} &
 cd build/bin
 ./yokaiServeur ${C_SERVER_PORT} &
 sleep 5
 ./joueur ${C_SERVER_NAME} ${C_SERVER_PORT} ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT} &
-./joueur ${C_SERVER_NAME} ${C_SERVER_PORT} ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT}
+./joueur ${C_SERVER_NAME} ${C_SERVER_PORT} ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT2}

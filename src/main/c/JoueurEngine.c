@@ -1,4 +1,5 @@
 #include "JoueurEngine.h"
+#include "../../protocol/c/YokaiJavaEngineProtocol.h"
 
 int initJoueur(JoueurState *state, char *name, TSensTetePiece desiredSensToStart, char *nameServerC, unsigned short portServerC, char *nameServerJava,
                unsigned short portServerJava)
@@ -67,25 +68,15 @@ int updateJoueur(JoueurState *state)
 
             else
                 newGameRequest.sens = YJ_SUD;
-            printf("Sending Init Request...");
 
             if(sendInitRequestToJavaServer(state, newGameRequest) < 0 )
                 return crash(state);
 
-
-            printf("Init Request sended\nReceivingAnswer\n");
-
             if(receiveInitAnswerFromJavaServer(state, &newGameAnswer) < 0)
                 return crash(state);
 
-
-            printf("Answer Received...");
-
             if(newGameAnswer.returnCode != YJ_ERR_SUCCESS)
                 return crash(state);
-
-
-            printf("Next Turn...");
 
             if(state->sens == SUD)
                 state->step = PLAY_TURN;
@@ -123,11 +114,19 @@ int updateJoueur(JoueurState *state)
 
             askNextMoveRequest.id = YJ_ASK_MOVE;
 
+            printf("\n\nJOUEUR:ASKING NEXT COUP\n\n");
+
             if(askNextCoupToJavaServer(state, askNextMoveRequest) < 0)
                 return crash(state);
 
+
+            printf("\n\nJOUEUR: NEXT COUP SENDED\n\n");
+
             if(getNextCoupFromJavaServer(state, &askNextMoveAnswer) < 0)
                 return crash(state);
+
+
+            printf("\n\nJOUEUR:NEXT COUP GOTTEN \n\n");
 
             //TODO handle nextMove potential errors
 
@@ -299,15 +298,10 @@ int sendInitRequestToJavaServer(JoueurState *state, YJNewGameRequest newGameRequ
     int32_t id = intToInt32bJava(newGameRequest.id);
     int32_t faction = intToInt32bJava(newGameRequest.sens);
 
-    printf("\n\nSending id: %d\n\n", id);
-
-    if(sendInt32b(state, id) <= 0)
+    if(sendInt32b(state, id) < 0)
         return -1;
 
-
-    printf("\n\nSending faction\n\n");
-
-    if(sendInt32b(state, faction) <= 0)
+    if(sendInt32b(state, faction) < 0)
         return -1;
 
     return 0;
@@ -319,6 +313,8 @@ int receiveInitAnswerFromJavaServer(JoueurState *state, YJNewGameAnswer *newGame
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     newGameAnswer->returnCode = (YJReturnCode)byteArrayJavaToIntC(buff);
+
+    return 0;
 }
 
 int sendMoveRequestToJavaServer(JoueurState *state, YJSendMoveRequest sendMoveRequest)
@@ -330,22 +326,22 @@ int sendMoveRequestToJavaServer(JoueurState *state, YJSendMoveRequest sendMoveRe
     int32_t to_col = intToInt32bJava(sendMoveRequest.to.Col);
     int32_t to_line = intToInt32bJava(sendMoveRequest.to.Line);
 
-    if(sendInt32b(state, id) <= 0)
+    if(sendInt32b(state, id) < 0)
         return -1;
 
-    if(sendInt32b(state, move_type) <= 0)
+    if(sendInt32b(state, move_type) < 0)
         return -1;
 
-    if(sendInt32b(state, from_col) <= 0)
+    if(sendInt32b(state, from_col) < 0)
         return -1;
 
-    if(sendInt32b(state, from_line) <= 0)
+    if(sendInt32b(state, from_line) < 0)
         return -1;
 
-    if(sendInt32b(state, to_col) <= 0)
+    if(sendInt32b(state, to_col) < 0)
         return -1;
 
-    if(sendInt32b(state, to_line) <= 0)
+    if(sendInt32b(state, to_line) < 0)
         return -1;
 
     return 0;
@@ -356,6 +352,7 @@ int receiveMoveAnswerFromJavaServer(JoueurState *state, YJMoveAnswer *moveAnswer
     char buff[4];
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
+
     moveAnswer->returnCode = (YJReturnCode)byteArrayJavaToIntC(buff);
 
     return 0;
@@ -369,19 +366,19 @@ int sendPlaceRequestToJavaServer(JoueurState *state, YJSendPlaceRequest sendPlac
     int32_t cell_col = intToInt32bJava(sendPlaceRequest.cell.Col);
     int32_t cell_line = intToInt32bJava(sendPlaceRequest.cell.Line);
 
-    if(sendInt32b(state, id) <= 0)
+    if(sendInt32b(state, id) < 0)
         return -1;
 
-    if(sendInt32b(state, move_type) <= 0)
+    if(sendInt32b(state, move_type) < 0)
         return -1;
 
-    if(sendInt32b(state, piece_type) <= 0)
+    if(sendInt32b(state, piece_type) < 0)
         return -1;
 
-    if(sendInt32b(state, cell_col) <= 0)
+    if(sendInt32b(state, cell_col) < 0)
         return -1;
 
-    if(sendInt32b(state, cell_line) <= 0)
+    if(sendInt32b(state, cell_line) < 0)
         return -1;
 
     return 0;
@@ -401,7 +398,7 @@ int askNextCoupToJavaServer(JoueurState *state, YJAskNextMoveRequest askNextMove
 {
     int32_t id = intToInt32bJava(askNextMoveRequest.id);
 
-    if(sendInt32b(state, id) <= 0)
+    if(sendInt32b(state, id) < 0)
         return -1;
 
     return 0;
@@ -410,38 +407,49 @@ int askNextCoupToJavaServer(JoueurState *state, YJAskNextMoveRequest askNextMove
 int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMoveAnswer)
 {
     char buff[4];
+
+    printf("\n\nJOUEUR\t0\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
+
     askNextMoveAnswer->returnCode = (YJReturnCode)byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t1\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->moveType = (YJMoveType)byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t2\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->piece = (YJPiece)byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t3\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->capture = byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t4\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->from.Col = byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t5\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->from.Line = byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t6\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->to.Col = byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t7\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->to.Line = byteArrayJavaToIntC(buff);
 
+    printf("\n\nJOUEUR\t8\n\n");
     return 0;
 
 }
@@ -475,11 +483,13 @@ int receiveByteBufferFromJavaEngine(JoueurState *state, char *buff)
 {
     int bytesRead = 0;
 
+
+    printf("\n\nJOUEUR\tREADING BYTES\n\n");
     while (bytesRead < 4)
     {
         int result = read(state->socketJava, buff + bytesRead, sizeof(buff) - bytesRead);
 
-        if (result < 1)
+        if (result <= 0)
         {
             return -1;
         }
