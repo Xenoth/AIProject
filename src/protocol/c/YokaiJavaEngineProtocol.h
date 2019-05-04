@@ -6,8 +6,7 @@ typedef enum
     YJ_NEW_GAME = 0,
     YJ_SEND_MOVE = 1,
     YJ_ASK_MOVE = 2,
-
-    YJ_REQUEST_ID_C_LIMITATION_MAKE_ENUM_32_BIT = 0xffff,
+    YJ_STOP = 3,
 } YJRequestID;
 
 typedef enum
@@ -18,8 +17,6 @@ typedef enum
     YJ_ERR_ASK_MOVE = -3,
     YJ_ERR_NOT_YOUR_TURN = -4,
     YJ_ERR_UNDEFINED = -5,
-
-    YJ_RETURN_CODE_C_LIMITATION_MAKE_ENUM_32_BIT = 0xffff,
 } YJReturnCode;
 
 /*
@@ -115,6 +112,16 @@ typedef struct
     YJCase to;
 
 } YJAskNextMoveAnswer;
+
+typedef struct
+{
+    YJRequestID id;
+} YJSendStop;
+
+typedef struct
+{
+    YJReturnCode returnCode;
+} YJStopAnswer;
 
 int32_t intToInt32bJava(const int something);
 

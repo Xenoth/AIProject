@@ -60,44 +60,44 @@ move_so(Case, NvCase):-
     can_move_so(Case),
     NvCase is Case + 4.
 
-% Kodoma Sud
-move(kodoma, sud, Case, NvCase):-
+% kodama Sud
+move(kodama, sud, Case, NvCase):-
     move_s(Case, NvCase).
 
-% Kodoma Nord
-move(kodoma, nord, Case, NvCase):-
+% kodama Nord
+move(kodama, nord, Case, NvCase):-
     move_n(Case, NvCase).
 
-% Kodoma Samourai Sud
-move(kodoma_samourai, sud, Case, NvCase):-
+% kodama Samourai Sud
+move(kodama_samourai, sud, Case, NvCase):-
     move_s(Case, NvCase).
 
-move(kodoma_samourai, sud, Case, NvCase):-
+move(kodama_samourai, sud, Case, NvCase):-
     move_se(Case, NvCase).
 
-move(kodoma_samourai, sud, Case, NvCase):-
+move(kodama_samourai, sud, Case, NvCase):-
     move_so(Case, NvCase).
 
-move(kodoma_samourai, sud, Case, NvCase):-
+move(kodama_samourai, sud, Case, NvCase):-
     move_e(Case, NvCase).
 
-move(kodoma_samourai, sud, Case, NvCase):-
+move(kodama_samourai, sud, Case, NvCase):-
     move_o(Case, NvCase).
 
-% Kodoma Samourai Nord
-move(kodoma_samourai, nord, Case, NvCase):-
+% kodama Samourai Nord
+move(kodama_samourai, nord, Case, NvCase):-
     move_n(Case, NvCase).
 
-move(kodoma_samourai, nord, Case, NvCase):-
+move(kodama_samourai, nord, Case, NvCase):-
     move_ne(Case, NvCase).
 
-move(kodoma_samourai, nord, Case, NvCase):-
+move(kodama_samourai, nord, Case, NvCase):-
     move_no(Case, NvCase).
 
-move(kodoma_samourai, nord, Case, NvCase):-
+move(kodama_samourai, nord, Case, NvCase):-
     move_e(Case, NvCase).
 
-move(kodoma_samourai, nord, Case, NvCase):-
+move(kodama_samourai, nord, Case, NvCase):-
     move_o(Case, NvCase).
 
 % Kirin Sud

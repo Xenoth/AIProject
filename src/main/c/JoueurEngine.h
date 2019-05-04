@@ -177,6 +177,22 @@ int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMo
 
 /**
  *
+ * @param state
+ * @param sendStop
+ * @return
+ */
+int sendStopRequestToJavaServer(JoueurState *state, YJSendStop sendStop);
+
+/**
+ *
+ * @param state
+ * @param stopAnswer
+ * @return
+ */
+int receiveStopAnswerFromJavaServer(JoueurState *state, YJStopAnswer *stopAnswer);
+
+/**
+ *
  * @param state     in/out
  * @return
  */

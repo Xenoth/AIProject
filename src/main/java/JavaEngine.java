@@ -79,7 +79,6 @@ public class JavaEngine {
         try {
             do{
                 id = dis.readInt();
-                System.out.println("JAVa\t id = " + id);
                 switch(YokaiJavaEngineProtocol.YJRequestID.values()[id]){
                     case YJ_NEW_GAME :
                         int sens = dis.readInt();
@@ -98,6 +97,9 @@ public class JavaEngine {
                             int fromLine = dis.readInt();
                             int toCol = dis.readInt();
                             int toLine = dis.readInt();
+
+                            System.out.println("Received move request from joueur : "+ fromCol + " " + fromLine + " " + toCol + " " + toLine);
+
                             YokaiJavaEngineProtocol.YJCase from = new YokaiJavaEngineProtocol.YJCase(fromCol,fromLine);
                             YokaiJavaEngineProtocol.YJCase to = new YokaiJavaEngineProtocol.YJCase(toCol,toLine);
 
@@ -107,7 +109,23 @@ public class JavaEngine {
                                     from,
                                     to);*/
 
+                            String oldPiece = plateau.plateau[fromLine * 5 + fromCol][0];
+                            String oldSens = plateau.plateau[fromLine * 5 + fromCol][1];
+
                             plateau.plateauMove(from,to);
+
+                            // promotion a passer en fonction
+                            if(oldPiece == "oni" && oldSens == "sud" && toLine > 3)
+                                plateau.plateau[toLine * 5 + toCol][0] = "super_oni";
+
+                            else if(oldPiece == "oni" && oldSens == "nord" && toLine < 2)
+                              plateau.plateau[toLine * 5 + toCol][0] = "super_oni";
+
+                            else if(oldPiece == "kodama" && (toLine < 2 || toLine > 3))
+                                plateau.plateau[toLine * 5 + toCol][0] = "kodama_samourai";
+
+                            System.out.println("\n\nPIIIIIIIIIECE bougé : " + oldPiece + " devient => " + plateau.plateau[toLine * 5 + toCol][0]);
+
                             moveAnswer = new YokaiJavaEngineProtocol.YJMoveAnswer(YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS);
                             sendMoveAnswer(dos,moveAnswer);
 
@@ -129,6 +147,13 @@ public class JavaEngine {
                     case YJ_ASK_MOVE:
                         nextMoveAnswer = requestProlog(sp, plateau);
                         sendNextCoupAnswer(dos, nextMoveAnswer);
+                        break;
+                    case YJ_FIN:
+                        //Todo put in class and fuction ?
+                        ByteBuffer buff = ByteBuffer.allocate(4);
+                        byte[] b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS.ordinal())).array();
+
+                        dos.write(b);
                         break;
                 }
             }while (YokaiJavaEngineProtocol.YJRequestID.values()[id] != YokaiJavaEngineProtocol.YJRequestID.YJ_FIN);
@@ -165,52 +190,74 @@ public class JavaEngine {
 
     public static void sendNextCoupAnswer(DataOutputStream dos, YokaiJavaEngineProtocol.YJAskNextMoveAnswer nextMoveAnswer) throws IOException{
 
+
+        System.out.println("\tSending return code = " + convertReturnCode(nextMoveAnswer.returnCode.ordinal()));
+
         ByteBuffer buff = ByteBuffer.allocate(4);
         byte[] b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.returnCode.ordinal())).array();
 
         dos.write(b);
 
-        System.out.println("\n\nJAVA\tmovetype = " + nextMoveAnswer.moveType);
+        System.out.println("\tSending moveType = " + nextMoveAnswer.moveType.ordinal());
 
         buff = ByteBuffer.allocate(4);
         b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.moveType.ordinal()).array();
 
         dos.write(b);
 
+        System.out.println("\tSending piece = " + nextMoveAnswer.piece.ordinal());
+
         buff = ByteBuffer.allocate(4);
-        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.piece.ordinal())).array();
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.piece.ordinal()).array();
 
         dos.write(b);
 
+        System.out.println("\tSending sens = " + nextMoveAnswer.sens.ordinal());
+
         buff = ByteBuffer.allocate(4);
-        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.sens.ordinal())).array();
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.sens.ordinal()).array();
 
         dos.write(b);
+
+        System.out.println("\tSending capture = " + nextMoveAnswer.capture);
 
         buff = ByteBuffer.allocate(4);
         b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.capture).array();
 
         dos.write(b);
 
+        System.out.println("\tSending fromCol = " + nextMoveAnswer.from.Col);
+
         buff = ByteBuffer.allocate(4);
-        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.from.Col)).array();
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.from.Col).array();
 
         dos.write(b);
 
+
+        System.out.println("\tSending fromLine = " + nextMoveAnswer.from.Line);
+
         buff = ByteBuffer.allocate(4);
-        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.from.Line)).array();
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.from.Line).array();
 
         dos.write(b);
 
+        System.out.println("\tSending toCol = " + nextMoveAnswer.to.Col);
+
         buff = ByteBuffer.allocate(4);
-        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.to.Col)).array();
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.to.Col).array();
 
         dos.write(b);
 
+
+        System.out.println("\tSending toLine = " + nextMoveAnswer.to.Line);
+
         buff = ByteBuffer.allocate(4);
-        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(convertReturnCode(nextMoveAnswer.to.Line)).array();
+        b = buff.order(ByteOrder.LITTLE_ENDIAN).putInt(nextMoveAnswer.to.Line).array();
 
         dos.write(b);
+
+
+        System.out.println("\tSend move done.");
 
     }
 
@@ -248,19 +295,24 @@ public class JavaEngine {
 
         // HashMap utilisé pour stocker les solutions
         HashMap results = new HashMap();
+        Query qu = null;
 
         try {
 
             // Creation d'une requete (Query) Sicstus
             //   - instanciera results avec les résultats de la requète (from et to)
-            Query qu = sp.openQuery("recuperer_meilleur_coup_v1(["+plateau.toString()+"],moi,From,To).",results);
+            qu = sp.openQuery("recuperer_meilleur_coup_v1(["+plateau.toString()+"],moi,From,To).",results);
 
-            qu.close();
             // parcours des solutions
             qu.nextSolution();
-            int from = (int)results.get("From");
-            int to = (int)results.get("To");
+
+            int from = Integer.valueOf(results.get("From").toString());
+            int to = Integer.valueOf(results.get("To").toString());
+
+            qu.close();
+
             YokaiJavaEngineProtocol.YJPiece piece = null;
+
             switch(plateau.plateau[from][0]){
                 case "oni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_ONI;
                     break;
@@ -268,22 +320,28 @@ public class JavaEngine {
                     break;
                 case "kodama" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KODAMA;
                     break;
-                case "kodamasamourai" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KODAMA_SAMOURAI;
+                case "kodama_samourai" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KODAMA_SAMOURAI;
                     break;
                 case "koropokkuru" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KOROPOKKURU;
                     break;
-                case "superoni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_SUPER_ONI;
+                case "super_oni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_SUPER_ONI;
                     break;
             }
             YokaiJavaEngineProtocol.YJCase caseFrom = plateau.plateauToCase(from);
             YokaiJavaEngineProtocol.YJCase caseTo = plateau.plateauToCase(to);
-            plateau.plateauMove(from,to);
+
+            System.out.println("Plateau : " + plateau.toString());
+
+            int capture = 0;
+            if(plateau.plateau[to][0] != "v")
+              capture = 1;
+
             return new YokaiJavaEngineProtocol.YJAskNextMoveAnswer(
                     YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS,
                     YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE,
                     piece,
                     plateau.getSensActuel(),
-                    0,
+                    capture,
                     caseFrom,
                     caseTo);
         }
