@@ -6,40 +6,40 @@
 % Exemple de plateau, d�but de partie.
 plateau([
 [oni, sud, moi, 0], [kirin, sud, moi, 1], [koropokkuru, sud, moi, 2], [kirin, sud, moi, 3], [oni, sud, moi, 4],
-[v, none, neutre, 5], [v, none, neutre, 6], [kodoma, nord, adv, 7], [v, none, neutre, 8], [v, none, neutre, 9],
-[v, none, neutre, 10], [kodoma, sud, moi, 11], [kodoma, sud, moi, 12], [kodoma, sud, moi, 13], [v, none, neutre, 14],
-[v, none, neutre, 15], [kodoma, nord, adv, 16], [kodoma, nord, adv, 17], [kodoma, nord, adv, 18], [v, none, neutre, 19],
+[v, none, neutre, 5], [v, none, neutre, 6], [kodama, nord, adv, 7], [v, none, neutre, 8], [v, none, neutre, 9],
+[v, none, neutre, 10], [kodama, sud, moi, 11], [kodama, sud, moi, 12], [kodama, sud, moi, 13], [v, none, neutre, 14],
+[v, none, neutre, 15], [kodama, nord, adv, 16], [kodama, nord, adv, 17], [kodama, nord, adv, 18], [v, none, neutre, 19],
 [v, none, neutre, 20], [v, none, neutre, 21], [v, none, neutre, 22], [v, none, neutre, 23], [v, none, neutre, 24],
 [oni, nord, adv, 25], [kirin, nord, adv, 26], [koropokkuru, nord, adv, 27], [kirin, nord, adv, 28], [oni, nord, adv, 29]
 ]).
 
 valeur_piece_sur_plateau(v, 0).
-valeur_piece_sur_plateau(kodoma, 10).
+valeur_piece_sur_plateau(kodama, 10).
 valeur_piece_sur_plateau(oni, 25).
-valeur_piece_sur_plateau(kodoma_samourai, 55).
+valeur_piece_sur_plateau(kodama_samourai, 55).
 valeur_piece_sur_plateau(super_oni, 55).
 valeur_piece_sur_plateau(kirin, 80).
 valeur_piece_sur_plateau(koropokkuru, 2000).
 
-valeur_promotion(kodoma, 50).
+valeur_promotion(kodama, 50).
 valeur_promotion(oni, 50).
 
-deplacer_piece_sur_plateau(Plateau, [kodoma, sud, Faction, FromCase], ToCase, Cout):-
-    move(kodoma, sud, FromCase, ToCase),
+deplacer_piece_sur_plateau(Plateau, [kodama, sud, Faction, FromCase], ToCase, Cout):-
+    move(kodama, sud, FromCase, ToCase),
     ToCase >= 20,
     nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
     dif(FactionPiece, Faction),
     valeur_piece_sur_plateau(TypePiece, C1),
-    valeur_promotion(kodoma, C2),
+    valeur_promotion(kodama, C2),
     Cout is C1 + C2.
 
-deplacer_piece_sur_plateau(Plateau, [kodoma, nord, Faction, FromCase], ToCase, Cout):-
-    move(kodoma, nord, FromCase, ToCase),
+deplacer_piece_sur_plateau(Plateau, [kodama, nord, Faction, FromCase], ToCase, Cout):-
+    move(kodama, nord, FromCase, ToCase),
     ToCase < 10,
     nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
     dif(FactionPiece, Faction),
     valeur_piece_sur_plateau(TypePiece, C1),
-    valeur_promotion(kodoma, C2),
+    valeur_promotion(kodama, C2),
     Cout is C1 + C2.
 
 
@@ -73,7 +73,7 @@ test1(ToCase,Cout):-
 
 test2(ToCase,Cout):-
     plateau(Plateau),
-    deplacer_piece_sur_plateau(Plateau,[kodoma,sud,moi,11], ToCase, Cout).
+    deplacer_piece_sur_plateau(Plateau,[kodama,sud,moi,11], ToCase, Cout).
 
 
 recuperer_piece_faction([[Piece,Sens,Faction,Case]|_], Faction, [Piece,Sens,Faction,Case]).

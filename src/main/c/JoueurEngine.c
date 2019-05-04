@@ -36,6 +36,9 @@ int updateJoueur(JoueurState *state)
 
     TPartieRep partieRep;
 
+    YJSendStop sendStop;
+    YJStopAnswer stopAnswer;
+
 
     switch (state->step) {
         case INIT:
@@ -53,8 +56,9 @@ int updateJoueur(JoueurState *state)
                     state->sens = SUD;
                 else
                     state->sens = NORD;
-
             }
+
+            printf("Sens joueur : %d\n", state->sens);
 
             state->step = START_FIRST_GAME;
             break;
@@ -114,19 +118,11 @@ int updateJoueur(JoueurState *state)
 
             askNextMoveRequest.id = YJ_ASK_MOVE;
 
-            printf("\n\nJOUEUR:ASKING NEXT COUP\n\n");
-
             if(askNextCoupToJavaServer(state, askNextMoveRequest) < 0)
                 return crash(state);
 
-
-            printf("\n\nJOUEUR: NEXT COUP SENDED\n\n");
-
             if(getNextCoupFromJavaServer(state, &askNextMoveAnswer) < 0)
                 return crash(state);
-
-
-            printf("\n\nJOUEUR:NEXT COUP GOTTEN \n\n");
 
             //TODO handle nextMove potential errors
 
@@ -141,13 +137,15 @@ int updateJoueur(JoueurState *state)
 
             //TODO Handle ohter propCoup ?
             if(coupRep.propCoup != CONT)
+            {
                 state->step = END_GAME;
+                break;
+            }
 
             // TODO For now we only move pieces, no place Request needed
             sendMoveRequest = TCoupReq2YJSendMoveRequest(coupReq);
             if (sendMoveRequestToJavaServer(state, sendMoveRequest) < 0)
                 return crash(state);
-
 
             if(receiveMoveAnswerFromJavaServer(state, &moveAnswer) < 0)
                 return crash(state);
@@ -164,7 +162,8 @@ int updateJoueur(JoueurState *state)
 
             state->nbMoves ++;
 
-            if(coupRep.propCoup != CONT) {
+            if(coupRep.propCoup != CONT)
+            {
                 state->step = END_GAME;
                 break;
             }
@@ -211,6 +210,16 @@ int updateJoueur(JoueurState *state)
             break;
 
         case END:
+            sendStop.id = YJ_STOP;
+            if(sendStopRequestToJavaServer(state, sendStop) < 0)
+                return crash(state);
+
+            if(receiveStopAnswerFromJavaServer(state, &stopAnswer) < 0)
+                return crash(state);
+
+            if(stopAnswer.returnCode != YJ_ERR_SUCCESS)
+                return crash(state);
+
             shutdownAndCloseSockets(state);
             state->step = DONE;
             break;
@@ -271,6 +280,7 @@ int receivePartieAnswerFromServerC(JoueurState *state, TPartieRep *partieRep)
 
 int sendCoupRequestToServerC(JoueurState *state, TCoupReq coupReq)
 {
+    printf("Sending Coup to C Server : Faction %d ,piece:%d (sens %d), from : %d,%d to : %d,%d\n\n", state->sens, coupReq.piece.typePiece, coupReq.piece.sensTetePiece, coupReq.params.deplPiece.caseDep.c, coupReq.params.deplPiece.caseDep.l, coupReq.params.deplPiece.caseArr.c, coupReq.params.deplPiece.caseArr.l);
     if (send(state->socketC, &coupReq, sizeof(TCoupReq), 0) <= 0)
         return -1;
 
@@ -295,6 +305,8 @@ int receiveCoupReqFromServerC(JoueurState *state, TCoupReq *coupReq)
 
 int sendInitRequestToJavaServer(JoueurState *state, YJNewGameRequest newGameRequest)
 {
+
+    printf("Sending init request to Java Server faction %d sens = %d\n", state->sens, newGameRequest.sens);
     int32_t id = intToInt32bJava(newGameRequest.id);
     int32_t faction = intToInt32bJava(newGameRequest.sens);
 
@@ -325,6 +337,8 @@ int sendMoveRequestToJavaServer(JoueurState *state, YJSendMoveRequest sendMoveRe
     int32_t from_line = intToInt32bJava(sendMoveRequest.from.Line);
     int32_t to_col = intToInt32bJava(sendMoveRequest.to.Col);
     int32_t to_line = intToInt32bJava(sendMoveRequest.to.Line);
+
+    printf("Sending move request to java server : id = %d , moveType = %d, fromCol = %d, fromLine = %d, toCol = %d, toLine = %d\n", id, move_type, from_col, from_line, to_col, to_line);
 
     if(sendInt32b(state, id) < 0)
         return -1;
@@ -408,50 +422,83 @@ int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMo
 {
     char buff[4];
 
-    printf("\n\nJOUEUR\t0\n\n");
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
 
     askNextMoveAnswer->returnCode = (YJReturnCode)byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t1\n\n");
+    printf("Received return code = %d\n", askNextMoveAnswer->returnCode);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->moveType = (YJMoveType)byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t2\n\n");
+    printf("Received move type = %d\n", askNextMoveAnswer->moveType);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->piece = (YJPiece)byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t3\n\n");
+    printf("Received piece = %d\n", askNextMoveAnswer->piece);
+
+    if(receiveByteBufferFromJavaEngine(state, buff) < 0)
+        return -1;
+    askNextMoveAnswer->sens = byteArrayJavaToIntC(buff);
+
+    printf("Received sens = %d\n", askNextMoveAnswer->sens);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->capture = byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t4\n\n");
+    printf("Received capture = %d\n", askNextMoveAnswer->capture);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->from.Col = byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t5\n\n");
+    printf("Received from Col = %d\n", askNextMoveAnswer->from.Col);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->from.Line = byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t6\n\n");
+    printf("Received from Line = %d\n", askNextMoveAnswer->from.Line);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->to.Col = byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t7\n\n");
+    printf("Received to Col = %d\n", askNextMoveAnswer->to.Col);
+
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
     askNextMoveAnswer->to.Line = byteArrayJavaToIntC(buff);
 
-    printf("\n\nJOUEUR\t8\n\n");
+    printf("Received to Line = %d\n", askNextMoveAnswer->to.Line);
+
     return 0;
 
+}
+
+int sendStopRequestToJavaServer(JoueurState *state, YJSendStop sendStop)
+{
+    int32_t id = intToInt32bJava(sendStop.id);
+
+    if(sendInt32b(state, id) < 0)
+        return -1;
+
+    return 0;
+}
+
+int receiveStopAnswerFromJavaServer(JoueurState *state, YJStopAnswer *stopAnswer)
+{
+    char buff[4];
+    if(receiveByteBufferFromJavaEngine(state, buff) < 0)
+        return -1;
+    stopAnswer->returnCode = (YJReturnCode)byteArrayJavaToIntC(buff);
+
+    return 0;
 }
 
 int shutdownAndCloseSockets(JoueurState *state)
@@ -483,8 +530,6 @@ int receiveByteBufferFromJavaEngine(JoueurState *state, char *buff)
 {
     int bytesRead = 0;
 
-
-    printf("\n\nJOUEUR\tREADING BYTES\n\n");
     while (bytesRead < 4)
     {
         int result = read(state->socketJava, buff + bytesRead, sizeof(buff) - bytesRead);
@@ -548,7 +593,7 @@ YJSendMoveRequest TCoupReq2YJSendMoveRequest(TCoupReq coupReq)
     sendMoveRequest.from.Col = coupReq.params.deplPiece.caseDep.c;
     sendMoveRequest.from.Line = coupReq.params.deplPiece.caseDep.l;
     sendMoveRequest.to.Col = coupReq.params.deplPiece.caseArr.c;
-    sendMoveRequest.to.Line = coupReq.params.deplPiece.caseDep.l;
+    sendMoveRequest.to.Line = coupReq.params.deplPiece.caseArr.l;
 
     sendMoveRequest.id = YJ_SEND_MOVE;
     sendMoveRequest.moveType = YJ_MOVE;
