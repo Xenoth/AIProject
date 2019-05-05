@@ -8,7 +8,7 @@ plateau([
 [oni, sud, moi, 0], [kirin, sud, moi, 1], [koropokkuru, sud, moi, 2], [kirin, sud, moi, 3], [oni, sud, moi, 4],
 [v, none, neutre, 5], [v, none, neutre, 6], [kodama, nord, adv, 7], [v, none, neutre, 8], [v, none, neutre, 9],
 [v, none, neutre, 10], [kodama, sud, moi, 11], [kodama, sud, moi, 12], [kodama, sud, moi, 13], [v, none, neutre, 14],
-[v, none, neutre, 15], [kodama, nord, adv, 16], [kodama, nord, adv, 17], [kodama, nord, adv, 18], [v, none, neutre, 19],
+[v, none, neutre, 15], [kodama, nord, adv, 16], [kodama, sud, moi, 17], [kodama, nord, adv, 18], [v, none, neutre, 19],
 [v, none, neutre, 20], [v, none, neutre, 21], [v, none, neutre, 22], [v, none, neutre, 23], [v, none, neutre, 24],
 [oni, nord, adv, 25], [kirin, nord, adv, 26], [koropokkuru, nord, adv, 27], [kirin, nord, adv, 28], [oni, nord, adv, 29]
 ]).
@@ -24,56 +24,50 @@ valeur_piece_sur_plateau(koropokkuru, 2000).
 valeur_promotion(kodama, 50).
 valeur_promotion(oni, 50).
 
-deplacer_piece_sur_plateau(Plateau, [kodama, sud, Faction, FromCase], ToCase, Cout):-
-    move(kodama, sud, FromCase, ToCase),
+coup_promotion(kodama, sud, ToCase, Cout):-
     ToCase >= 20,
-    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
-    dif(FactionPiece, Faction),
-    valeur_piece_sur_plateau(TypePiece, C1),
-    valeur_promotion(kodama, C2),
-    Cout is C1 + C2.
+    valeur_promotion(kodama, Cout),!.
 
-deplacer_piece_sur_plateau(Plateau, [kodama, nord, Faction, FromCase], ToCase, Cout):-
-    move(kodama, nord, FromCase, ToCase),
+coup_promotion(kodama, nord, ToCase, Cout):-
     ToCase < 10,
-    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
-    dif(FactionPiece, Faction),
-    valeur_piece_sur_plateau(TypePiece, C1),
-    valeur_promotion(kodama, C2),
-    Cout is C1 + C2.
+    valeur_promotion(kodama, Cout),!.
 
-
-deplacer_piece_sur_plateau(Plateau, [oni, sud, Faction, FromCase], ToCase, Cout):-
-    move(oni, sud, FromCase, ToCase),
+coup_promotion(oni, sud, ToCase, Cout):-
     ToCase >= 20,
-    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
-    dif(FactionPiece, Faction),
-    valeur_piece_sur_plateau(TypePiece, C1),
-    valeur_promotion(oni, C2),
-    Cout is C1 + C2.
+    valeur_promotion(kodama, Cout),!.
 
-deplacer_piece_sur_plateau(Plateau, [oni, nord, Faction, FromCase], ToCase, Cout):-
-    move(oni, nord, FromCase, ToCase),
-    ToCase  < 10,
-    nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
-    valeur_piece_sur_plateau(TypePiece, C1),
-    dif(FactionPiece, Faction),
-    valeur_promotion(oni, C2),
-    Cout is C1 + C2.
+coup_promotion(oni, nord, ToCase, Cout):-
+    ToCase < 10,
+    valeur_promotion(kodama, Cout),!.
+
+coup_promotion(_,_,_,0):-!.
+
+perte_cout_si_menace_a_arrivee(Plateau, [Type, _, Faction, _], ToCase, C2, Cout):-
+    faction_ennemie(Faction, FactionMenacante),
+    recuperer_pieces_menacantes(Plateau, FactionMenacante, ToCase, ListePieces),
+    length(ListePieces, Nb),
+    dif(0, Nb),
+    valeur_piece_sur_plateau(Type, C1),
+    Cout is C2 + C1,!.
+
+perte_cout_si_menace_a_arrivee(_,_,_,_,0):-!.
 
 deplacer_piece_sur_plateau(Plateau, [Type, Sens, Faction, FromCase], ToCase, Cout):-
     move(Type, Sens, FromCase, ToCase),
     nth0(ToCase, Plateau, [TypePiece, _, FactionPiece, _]),
     dif(FactionPiece, Faction),
-    valeur_piece_sur_plateau(TypePiece, Cout).
+    coup_promotion(Type, Sens, ToCase, C2),
+    valeur_piece_sur_plateau(TypePiece, C1),
+    perte_cout_si_menace_a_arrivee(Plateau, [Type, Sens, Faction, FromCase], ToCase, C2, C3),
+    Cout is C1 + C2 - C3.
 
 test1(ToCase,Cout):-
     plateau(Plateau),
-    deplacer_piece_sur_plateau(Plateau,[kirin,sud,moi,1],ToCase,Cout).
+    deplacer_piece_sur_plateau(Plateau,[koropokkuru,nord,adv,27],ToCase,Cout).
 
 test2(ToCase,Cout):-
     plateau(Plateau),
-    deplacer_piece_sur_plateau(Plateau,[kodama,sud,moi,11], ToCase, Cout).
+    deplacer_piece_sur_plateau(Plateau,[kodama,nord,adv,7], ToCase, Cout).
 
 
 recuperer_piece_faction([[Piece,Sens,Faction,Case]|_], Faction, [Piece,Sens,Faction,Case]).
@@ -148,4 +142,97 @@ recuperer_meilleur_coup_v1(Plateau, Faction, FromCase, ToCase):-
 
 test7(FromCase, ToCase):-
     plateau(Plateau),
-    recuperer_meilleur_coup(Plateau, moi, FromCase, ToCase).
+    recuperer_meilleur_coup_v1(Plateau, moi, FromCase, ToCase).
+
+
+recuperer_meilleur_coup_v2(Plateau, Faction, FromCase, ToCase, Gain):-
+    koropokkuru_en_echec_coup(Plateau, Faction, [[_,_,_,FromCase], ToCase, Gain]),!.
+
+recuperer_meilleur_coup_v2(Plateau, Faction, FromCase, ToCase, Gain):-
+    recuperer_pieces_faction(Plateau, Faction, ListePieces),
+    recuperer_meilleur_coup_pieces(Plateau, ListePieces, [[_,_,_,FromCase], ToCase,Gain]),!.
+
+test8(FromCase, ToCase, Cout):-
+    plateau(Plateau),
+    recuperer_meilleur_coup_v2(Plateau, moi, FromCase, ToCase, Cout).
+
+%=== PIECE SAUVE ====
+
+recuperer_piece_menacante([[Piece,Sens,FactionMenacante,Case]|_], FactionMenacante,CaseInDanger, [Piece,Sens,FactionMenacante,Case]):-
+    move(Piece,Sens,Case,CaseInDanger).
+
+recuperer_piece_menacante([_|Tail], FactionMenacante, CaseInDanger, Piece):-
+    recuperer_piece_menacante(Tail, FactionMenacante, CaseInDanger, Piece).
+
+
+recuperer_pieces_menacantes(Plateau, FactionMenacante, CaseInDanger, ListePieces):-
+    findall(Piece, recuperer_piece_menacante(Plateau, FactionMenacante, CaseInDanger, Piece), ListePieces).
+
+recuperer_koropokkuru([[koropokkuru, Sens, Faction, Case]|_], Faction, [koropokkuru, Sens, Faction, Case]).
+
+recuperer_koropokkuru([_|Tail], Faction, Piece):-
+    recuperer_koropokkuru(Tail, Faction, Piece).
+
+
+faction_ennemie(moi, adv).
+faction_ennemie(adv, moi).
+
+koropokkuru_en_danger(Plateau, Faction, [Piece, Sens, Faction, Case], ListePieces):-
+    recuperer_koropokkuru(Plateau, Faction, [Piece,Sens,Faction,Case]),
+    faction_ennemie(Faction, FactionMenacante),
+    recuperer_pieces_menacantes(Plateau, FactionMenacante, Case, ListePieces).
+
+koropokkuru_en_echec_coup(Plateau, Faction, Coup):-
+    koropokkuru_en_danger(Plateau, Faction, _, ListePieces),
+    length(ListePieces, Nb),
+    Nb == 1,
+    koropokkuru_peut_etre_sauver_par_autre_piece(Plateau, Faction, ListePieces, Coup).
+
+koropokkuru_en_echec_coup(Plateau, Faction, Coup):-
+    koropokkuru_en_danger(Plateau, Faction, Koropokkuru, ListePieces),
+    length(ListePieces, Nb),
+    Nb > 0,
+    koropokkuru_doit_bouger(Plateau, Koropokkuru, Coup).
+
+koropokkuru_doit_bouger(Plateau, Koropokkuru, [[Piece, Sens, Faction, FromCase], ToCase, Gain]):-
+    recuperer_tout_les_coups_piece(Plateau, Koropokkuru, ListeCoups),
+    recuperer_meilleur_coup_piece(ListeCoups, [[Piece, Sens, Faction, FromCase], ToCase, Gain]),
+    faction_ennemie(Faction, FactionEnnemie),
+    recuperer_pieces_menacantes(Plateau, FactionEnnemie, ToCase, ListePieces),
+    length(ListePieces, Nb),
+    Nb == 0.
+
+koropokkuru_peut_etre_sauver_par_autre_piece(Plateau, Faction, [[_,_,_,Case]], [[Type, Sens, Faction, Case1], Case, Cout]):-
+    recuperer_pieces_menacantes(Plateau, Faction, Case, ListePieces),
+    recuperer_meilleur_coup_pieces(Plateau, ListePieces, [[Type, Sens, Faction, Case1],Case, Cout]),
+    Cout >= 0.
+
+test_plateau_danger([
+[oni, sud, moi, 0], [kirin, sud, moi, 1], [kirin, sud, moi, 2], [kirin, sud, moi, 3], [oni, sud, moi, 4],
+[v, none, neutre, 5], [koropokkuru, nord, adv, 6], [kodama, nord, adv, 7], [v, none, neutre, 8], [v, none, neutre, 9],
+[v, none, neutre, 10], [v, none, neutre, 11], [oni, nord, adv, 12], [kodama, sud, moi, 13], [v, none, neutre, 14],
+[v, none, neutre, 15], [koropokkuru, sud, moi, 16], [kodama, nord, adv, 17], [kodama, nord, adv, 18], [v, none, neutre, 19],
+[v, none, neutre, 20], [kodama, sud, moi, 21], [kodama, nord, adv, 22], [v, none, neutre, 23], [v, none, neutre, 24],
+[oni, nord, adv, 25], [kirin, nord, adv, 26], [koropokkuru, nord, adv, 27], [kirin, nord, adv, 28], [oni, nord, adv, 29]
+]).
+
+test_koropokkuru_en_echec_coup(Coup):-
+    test_plateau_danger(Plateau),
+    koropokkuru_en_echec_coup(Plateau, moi, Coup).
+
+test_danger_koropokkuru(ListePiecesMenacantes):-
+    test_plateau_danger(Plateau),
+    koropokkuru_en_danger(Plateau, moi,_, ListePiecesMenacantes).
+
+test_danger_1(ListePiecesMenacantes):-
+    test_plateau_danger(Plateau),
+    recuperer_pieces_menacantes(Plateau, adv, 22, ListePiecesMenacantes).
+
+
+
+
+
+
+
+
+
