@@ -251,7 +251,3 @@ move(super_oni, nord, Case, NvCase):-
 
 move(super_oni, nord, Case, NvCase):-
     move_n(Case, NvCase).
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes

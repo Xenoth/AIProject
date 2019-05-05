@@ -301,13 +301,16 @@ public class JavaEngine {
 
             // Creation d'une requete (Query) Sicstus
             //   - instanciera results avec les résultats de la requète (from et to)
-            qu = sp.openQuery("recuperer_meilleur_coup_v1(["+plateau.toString()+"],moi,From,To).",results);
+            qu = sp.openQuery("recuperer_meilleur_coup_v2(["+plateau.toString()+"],moi,From,To,Gain).",results);
 
             // parcours des solutions
             qu.nextSolution();
 
             int from = Integer.valueOf(results.get("From").toString());
             int to = Integer.valueOf(results.get("To").toString());
+
+            // Utile pour comparer meilleur deplacement piece ou alors deposer piece (plus tard)
+            int gain = Integer.valueOf(results.get("Gain").toString());
 
             qu.close();
 
