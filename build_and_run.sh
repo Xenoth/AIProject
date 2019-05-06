@@ -3,9 +3,9 @@
 C_SERVER_NAME=0.0.0.0
 JAVA_SERVER_NAME=0.0.0.0
 
-C_SERVER_PORT=1065
-JAVA_SERVER_PORT=1066
-JAVA_SERVER_PORT2=1067
+C_SERVER_PORT=1045
+JAVA_SERVER_PORT=1046
+JAVA_SERVER_PORT2=1747
 
 if [[ $# != 2 ]]
 then
@@ -58,7 +58,8 @@ javac -cp $2 -d build src/main/java/*.java
 
 
 echo "RUNNING..."
-
+skill java &
+sleep 1
 java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT} &
 java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT2} &
 cd build/bin

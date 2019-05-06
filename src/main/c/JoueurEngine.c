@@ -532,7 +532,7 @@ int receiveByteBufferFromJavaEngine(JoueurState *state, char *buff)
 
     while (bytesRead < 4)
     {
-        int result = read(state->socketJava, buff + bytesRead, sizeof(buff) - bytesRead);
+        int result = recv(state->socketJava, buff + bytesRead, sizeof(int) - bytesRead, 0);
 
         if (result <= 0)
         {
