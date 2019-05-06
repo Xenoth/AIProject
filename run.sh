@@ -2,34 +2,25 @@
 
 # Script for tournament, set the port and name for C Server.
 
-C_SERVER_NAME=0.0.0.0
+# CHANGE IF BIND ERROR ON PORT
 JAVA_SERVER_NAME=0.0.0.0
-
-C_SERVER_PORT=1065
 JAVA_SERVER_PORT=1066
+
+SICSTUSJASPERCP=/applis/sicstus-4.3.3/lib/sicstus-4.3.3/bin/jasper.jar
+SICSTUSLDPATH=/applis/sicstus-4.3.3/lib/
 
 if [[ $# != 2 ]]
 then
-    echo Missing ld_library_path and jasper classpath in args
+    echo "Missing args."
+	echo "Usage: run.sh NAME_SERVER_C PORT_SERVER_C"
     exit 1
 fi
 
-if [[ ! -e $1 ]]
-then
-    echo LD library folder not found at \'$1\'
-    exit 1
-fi
-
-if [[ ! -e $1 ]]
-then
-    echo Jasper classpath not found at \'$2\'
-    exit 1
-fi
-
+export LD_LIBRARY_PATH=${SICSTUSLDPATH}
 
 echo "RUNNING..."
 
-java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT} &
+java -cp "./build/:${SICSTUSJASPERCP}" "JavaEngine" ${JAVA_SERVER_PORT} &
 cd build/bin
 sleep 1
-./joueur ${C_SERVER_NAME} ${C_SERVER_PORT} ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT}
+./joueur $1 $2 ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT}

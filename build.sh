@@ -1,22 +1,7 @@
 #!/bin/bash
 
-if [[ $# != 2 ]]
-then
-    echo Missing ld_library_path and jasper classpath in args
-    exit 1
-fi
-
-if [[ ! -e $1 ]]
-then
-    echo LD library folder not found at \'$1\'
-    exit 1
-fi
-
-if [[ ! -e $1 ]]
-then
-    echo Jasper classpath not found at \'$2\'
-    exit 1
-fi
+SICSTUSJASPERCP=/applis/sicstus-4.3.3/lib/sicstus-4.3.3/bin/jasper.jar
+SICSTUSLDPATH=/applis/sicstus-4.3.3/lib/
 
 if [[ ! -d build ]]
 then
@@ -46,7 +31,7 @@ cd ..
 
 echo "BUILDING JAVA ENGINE..."
 
-export LD_LIBRARY_PATH=$1
-javac -cp $2 -d build src/main/java/*.java
+export LD_LIBRARY_PATH="${SICSTUSLDPATH}"
+javac -cp ${SICSTUSJASPERCP} -d build src/main/java/*.java
 
 echo "DONE"

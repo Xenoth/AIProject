@@ -364,20 +364,4 @@ public class JavaEngine {
                 null,
                 null);
     }
-
-    public static String saisieClavier() {
-
-        // declaration du buffer clavier
-        BufferedReader buff = new BufferedReader(new InputStreamReader(System.in));
-
-        try {
-            return buff.readLine();
-        }
-        catch (IOException e) {
-            System.err.println("IOException " + e);
-            e.printStackTrace();
-            System.exit(-1);
-        }
-        return ("halt.");
-    }
 }
