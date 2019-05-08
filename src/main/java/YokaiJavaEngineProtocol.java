@@ -1,5 +1,6 @@
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.ArrayList;
 
 class YokaiJavaEngineProtocol{
     public enum YJRequestID{
@@ -78,12 +79,14 @@ class YokaiJavaEngineProtocol{
         YJRequestID id;
         YJMoveType moveType;
         YJPiece piece;
+        YJSensPiece sens;
         YJCase cell;
 
-        public YJSendPlaceRequest(YJRequestID id,YJMoveType moveType, YJPiece piece, YJCase cell){
+        public YJSendPlaceRequest(YJRequestID id,YJMoveType moveType, YJPiece piece, YJSensPiece sens, YJCase cell){
             this.id = id;
             this.moveType = moveType;
             this.piece = piece;
+            this.sens = sens;
             this.cell = cell;
         }
     }
@@ -119,6 +122,8 @@ class YokaiJavaEngineProtocol{
 
     public static class YJPlateau implements Serializable{
         String[][] plateau;
+        ArrayList<String> reserveMoi;
+        ArrayList<String> reserveAdv;
         private YJSensPiece sensActuel;
 
         public YJPlateau(YJSensPiece sens){
@@ -130,6 +135,9 @@ class YokaiJavaEngineProtocol{
                 //plateau initial si on est le sud
                 this.plateau = plateauSudInitial();
             }
+
+            reserveMoi = new ArrayList<String>();
+            reserveAdv = new ArrayList<String>();
         }
 
         public YJSensPiece getSensActuel() {
@@ -153,13 +161,70 @@ class YokaiJavaEngineProtocol{
         public void plateauMove(YJCase Cfrom, YJCase Cto){
             int from = Cfrom.Line*5 + Cfrom.Col;
             int to = Cto.Line*5 + Cto.Col;
-            String[] tmp = plateau[to];//à voir ce qu'on fait des pièce capturé, comment les stockés, etc
+
+            String namePieceCapt = plateau[to][0];
+            String factionPieceCapt = plateau[to][2];
+
+            if(namePieceCapt != "v") {
+              if(namePieceCapt.equals("super_oni"))
+                namePieceCapt = "oni";
+              else if(namePieceCapt.equals("kodama_samourai"))
+                namePieceCapt = "kodama";
+
+              if(factionPieceCapt == "moi")
+                reserveAdv.add(namePieceCapt);
+              else if(factionPieceCapt == "adv")
+                reserveMoi.add(namePieceCapt);
+            }
+
             plateau[to][0] = plateau[from][0];
             plateau[to][1] = plateau[from][1];
             plateau[to][2] = plateau[from][2];
             plateau[from][0] = "v";
             plateau[from][1] = "none";
             plateau[from][2] = "neutre";
+        }
+
+        public void plateauPlace(YJSensPiece sens, YJPiece piece, YJCase casePiece) {
+            int caseOnPlateau = casePiece.Line*5 + casePiece.Col;
+
+            String sensName = "sud";
+            if(sens == YJSensPiece.YJ_NORD)
+                sensName = "nord";
+
+            String faction = "moi";
+            if(sens != sensActuel)
+                faction = "adv";
+
+            String pieceName = "error";
+            switch(piece) {
+              case YJ_KODAMA:
+                pieceName = "kodama";
+                break;
+              case YJ_KIRIN:
+                pieceName = "kirin";
+                break;
+              case YJ_ONI:
+                pieceName = "oni";
+                break;
+            }
+
+            plateau[caseOnPlateau][0] = pieceName;
+            plateau[caseOnPlateau][1] = sensName;
+            plateau[caseOnPlateau][2] = faction;
+
+            if(faction.equals("moi")) {
+                int index = reserveMoi.indexOf(pieceName);
+                reserveMoi.remove(index);
+            }
+
+            else if(faction.equals("adv")) {
+                int index = reserveAdv.indexOf(pieceName);
+                System.out.println("attempting to remove piece to index..." + index + " On " + reserveAdv.toString());
+                reserveAdv.remove(index);
+            }
+
+
         }
 
         private String[][] plateauNordInitial(){
