@@ -87,6 +87,7 @@ typedef struct
     YJRequestID id;
     YJMoveType moveType;
     YJPiece piece;
+    YJSensPiece sens;
     YJCase cell;
 
 } YJSendPlaceRequest;

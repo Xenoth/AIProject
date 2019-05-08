@@ -142,16 +142,32 @@ int updateJoueur(JoueurState *state)
                 break;
             }
 
-            // TODO For now we only move pieces, no place Request needed
-            sendMoveRequest = TCoupReq2YJSendMoveRequest(coupReq);
-            if (sendMoveRequestToJavaServer(state, sendMoveRequest) < 0)
-                return crash(state);
 
-            if(receiveMoveAnswerFromJavaServer(state, &moveAnswer) < 0)
-                return crash(state);
+            if(coupReq.typeCoup == DEPLACER)
+            {
+                sendMoveRequest = TCoupReq2YJSendMoveRequest(coupReq);
+                if(sendMoveRequestToJavaServer(state, sendMoveRequest) < 0)
+                    return crash(state);
 
-            if(moveAnswer.returnCode != YJ_ERR_SUCCESS)
-                return crash(state);
+                if(receiveMoveAnswerFromJavaServer(state, &moveAnswer) < 0)
+                    return crash(state);
+
+                if(moveAnswer.returnCode != YJ_ERR_SUCCESS)
+                    return crash(state);
+
+            }
+            else
+            {
+                sendPlaceRequest = TCoupReq2YJSendPlaceRequest(coupReq);
+                if(sendPlaceRequestToJavaServer(state, sendPlaceRequest) < 0)
+                    return crash(state);
+
+                if(receivePlaceAnswerFromJavaServer(state, &placeAnswer) < 0)
+                    return crash(state);
+
+                if(placeAnswer.returnCode != YJ_ERR_SUCCESS)
+                    return crash(state);
+            }
 
             state->step = WAIT_TURN;
             break;
@@ -377,6 +393,7 @@ int sendPlaceRequestToJavaServer(JoueurState *state, YJSendPlaceRequest sendPlac
     int32_t id = intToInt32bJava(sendPlaceRequest.id);
     int32_t move_type = intToInt32bJava(sendPlaceRequest.moveType);
     int32_t piece_type = intToInt32bJava(sendPlaceRequest.piece);
+    int32_t sens = intToInt32bJava(sendPlaceRequest.sens);
     int32_t cell_col = intToInt32bJava(sendPlaceRequest.cell.Col);
     int32_t cell_line = intToInt32bJava(sendPlaceRequest.cell.Line);
 
@@ -387,6 +404,9 @@ int sendPlaceRequestToJavaServer(JoueurState *state, YJSendPlaceRequest sendPlac
         return -1;
 
     if(sendInt32b(state, piece_type) < 0)
+        return -1;
+
+    if(sendInt32b(state, sens) < 0)
         return -1;
 
     if(sendInt32b(state, cell_col) < 0)
@@ -549,14 +569,24 @@ TCoupReq YJAskNextMoveAnswer2TCoupReq(YJAskNextMoveAnswer askNextMoveAnswer, uin
 {
     TCoupReq coupReq;
     coupReq.idRequest = COUP;
-    coupReq.typeCoup = DEPLACER;
     coupReq.numPartie = nbGames;
-    coupReq.params.deplPiece.estCapt = (askNextMoveAnswer.capture == 1);
-    coupReq.params.deplPiece.caseArr.c = (TCol)askNextMoveAnswer.to.Col;
-    coupReq.params.deplPiece.caseArr.l = (TLg)askNextMoveAnswer.to.Line;
-    coupReq.params.deplPiece.caseDep.c = (TCol)askNextMoveAnswer.from.Col;
-    coupReq.params.deplPiece.caseDep.l = (TLg)askNextMoveAnswer.from.Line;
     coupReq.piece.sensTetePiece = (TSensTetePiece)askNextMoveAnswer.sens;
+
+    if(askNextMoveAnswer.moveType == YJ_MOVE)
+    {
+      coupReq.typeCoup = DEPLACER;
+      coupReq.params.deplPiece.estCapt = (askNextMoveAnswer.capture == 1);
+      coupReq.params.deplPiece.caseArr.c = (TCol)askNextMoveAnswer.to.Col;
+      coupReq.params.deplPiece.caseArr.l = (TLg)askNextMoveAnswer.to.Line;
+      coupReq.params.deplPiece.caseDep.c = (TCol)askNextMoveAnswer.from.Col;
+      coupReq.params.deplPiece.caseDep.l = (TLg)askNextMoveAnswer.from.Line;
+    }
+    else if (askNextMoveAnswer.moveType == YJ_PLACE)
+    {
+      coupReq.typeCoup = DEPOSER;
+      coupReq.params.deposerPiece.l = (TCol)askNextMoveAnswer.to.Line;
+      coupReq.params.deposerPiece.c = (TCol)askNextMoveAnswer.to.Col;
+    }
 
     TTypePiece piece;
 
@@ -606,6 +636,9 @@ YJSendPlaceRequest TCoupReq2YJSendPlaceRequest(TCoupReq coupReq)
     YJSendPlaceRequest sendPlaceRequest;
     sendPlaceRequest.cell.Col = coupReq.params.deposerPiece.c;
     sendPlaceRequest.cell.Line = coupReq.params.deposerPiece.l;
+
+    sendPlaceRequest.piece = (YJPiece)coupReq.piece.typePiece;
+    sendPlaceRequest.sens = (YJSensPiece)coupReq.piece.sensTetePiece;
 
     sendPlaceRequest.id = YJ_SEND_MOVE;
     sendPlaceRequest.moveType = YJ_PLACE;

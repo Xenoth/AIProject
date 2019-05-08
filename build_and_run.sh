@@ -38,7 +38,7 @@ fi
 if [[ ! -e build/bin/yokaiServeur ]]
 then
     cd build/bin
-    tar xvf ../../Ref/yokai_v2.tar.gz
+    tar xvf ../../Ref/yokai_v3.tar.gz
     cd ../../
 fi
 

@@ -92,7 +92,7 @@ public class JavaEngine {
                         break;
                     case YJ_SEND_MOVE:
                         int moveType = dis.readInt();;
-                        if(YokaiJavaEngineProtocol.YJMoveType.values()[moveType] == YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE){//si c'est un movement adverse
+                        if(YokaiJavaEngineProtocol.YJMoveType.values()[moveType] == YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE){//si c'est un movement
                             int fromCol = dis.readInt();
                             int fromLine = dis.readInt();
                             int toCol = dis.readInt();
@@ -121,7 +121,10 @@ public class JavaEngine {
                             else if(oldPiece == "oni" && oldSens == "nord" && toLine < 2)
                               plateau.plateau[toLine * 5 + toCol][0] = "super_oni";
 
-                            else if(oldPiece == "kodama" && (toLine < 2 || toLine > 3))
+                            else if(oldPiece == "kodama" && oldSens == "sud" && toLine > 3)
+                                  plateau.plateau[toLine * 5 + toCol][0] = "kodama";
+
+                            else if(oldPiece == "kodama" && oldSens == "nord" && toLine < 2)
                                 plateau.plateau[toLine * 5 + toCol][0] = "kodama_samourai";
 
                             System.out.println("\n\nPIIIIIIIIIECE bougé : " + oldPiece + " devient => " + plateau.plateau[toLine * 5 + toCol][0]);
@@ -129,10 +132,13 @@ public class JavaEngine {
                             moveAnswer = new YokaiJavaEngineProtocol.YJMoveAnswer(YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS);
                             sendMoveAnswer(dos,moveAnswer);
 
-                        }else{ //si c'est un placement adverse
+                        }else{ //si c'est un placement
                             int piece = dis.readInt();
+                            int sensP = dis.readInt();
                             int cellCol = dis.readInt();
                             int cellLine = dis.readInt();
+
+                            System.out.println("Received PLACE REQUEST\n");
 
                             YokaiJavaEngineProtocol.YJCase cell = new YokaiJavaEngineProtocol.YJCase(cellCol, cellLine);
 
@@ -140,8 +146,14 @@ public class JavaEngine {
                                     YokaiJavaEngineProtocol.YJRequestID.values()[id],
                                     YokaiJavaEngineProtocol.YJMoveType.values()[moveType],
                                     YokaiJavaEngineProtocol.YJPiece.values()[piece],
+                                    YokaiJavaEngineProtocol.YJSensPiece.values()[sensP],
                                     cell
                             );
+
+                            plateau.plateauPlace(placeRequest.sens, placeRequest.piece, placeRequest.cell);
+
+                            placeAnswer = new YokaiJavaEngineProtocol.YJPlaceAnswer(YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS);
+                            sendPlaceAnswer(dos, placeAnswer);
                         }
                         break;
                     case YJ_ASK_MOVE:
@@ -293,6 +305,27 @@ public class JavaEngine {
 
     private static YokaiJavaEngineProtocol.YJAskNextMoveAnswer requestProlog(SICStus sp, YokaiJavaEngineProtocol.YJPlateau plateau){
 
+
+      String test1 = "";
+      for(int i = 0; i < plateau.reserveMoi.size(); i++) {
+        test1 = test1 + plateau.reserveMoi.get(i);
+        if(i != plateau.reserveMoi.size() - 1)
+            test1 = test1 + ",";
+      }
+
+      String test2 = "";
+      for(int i = 0; i < plateau.reserveAdv.size(); i++) {
+        test2 = test2 + plateau.reserveAdv.get(i);
+        if(i != plateau.reserveAdv.size() - 1)
+            test2 = test2 + ",";
+      }
+
+      System.out.println("RESERVE MOI = [" + test1 + "] SIZE OF RESERVE = "+ plateau.reserveMoi.size());
+      System.out.println("RESERVE ADV = [" + test2 + "] SIZE OF RESERVE = "+ plateau.reserveAdv.size());
+
+
+      System.out.println("PLATEAU : " + plateau.toString());
+
         // HashMap utilisé pour stocker les solutions
         HashMap results = new HashMap();
         Query qu = null;
@@ -303,20 +336,80 @@ public class JavaEngine {
             //   - instanciera results avec les résultats de la requète (from et to)
             qu = sp.openQuery("recuperer_meilleur_coup_v2(["+plateau.toString()+"],moi,From,To,Gain).",results);
 
+
+            System.out.println("\t\tTEST1");
+
             // parcours des solutions
             qu.nextSolution();
 
+
+            System.out.println("\t\tTEST2");
+
             int from = Integer.valueOf(results.get("From").toString());
             int to = Integer.valueOf(results.get("To").toString());
-
-            // Utile pour comparer meilleur deplacement piece ou alors deposer piece (plus tard)
             int gain = Integer.valueOf(results.get("Gain").toString());
 
             qu.close();
 
-            YokaiJavaEngineProtocol.YJPiece piece = null;
+            System.out.println("\t\tTEST3");
 
-            switch(plateau.plateau[from][0]){
+
+            String pieceOutput = "";
+            int caseToPlaceOutput = -1;
+            int valuePlaceOutput = Integer.MIN_VALUE;
+
+            if(plateau.reserveMoi.size() != 0) {
+                String sensInput = "sud";
+                if(plateau.getSensActuel() == YokaiJavaEngineProtocol.YJSensPiece.YJ_NORD)
+                    sensInput = "nord";
+
+                String listePiecesInput = "";
+                for(int i = 0; i < plateau.reserveMoi.size(); i++) {
+                  listePiecesInput = listePiecesInput + plateau.reserveMoi.get(i);
+                  if(i != plateau.reserveMoi.size() - 1)
+                      listePiecesInput = listePiecesInput + ",";
+                }
+
+                results = new HashMap();
+
+                System.out.println("\t\tTEST4");
+
+                qu = sp.openQuery("recuperer_meilleur_placement_piece_v1([" + plateau.toString() + "],[" + listePiecesInput + "],moi," + sensInput + ",Piece,CaseToPlace,Value).",results);
+
+                qu.nextSolution();
+
+                pieceOutput = results.get("Piece").toString();
+                caseToPlaceOutput = Integer.valueOf(results.get("CaseToPlace").toString());
+                valuePlaceOutput = Integer.valueOf(results.get("Value").toString());
+
+                qu.close();
+
+            }
+
+            System.out.println("\t\tTEST5");
+
+            YokaiJavaEngineProtocol.YJPiece piece = null;
+            int capture = 0;
+            YokaiJavaEngineProtocol.YJReturnCode returnCode;
+            YokaiJavaEngineProtocol.YJCase caseFrom;
+            YokaiJavaEngineProtocol.YJCase caseTo;
+            YokaiJavaEngineProtocol.YJMoveType moveType;
+
+            if(valuePlaceOutput > gain) {
+                caseFrom = new YokaiJavaEngineProtocol.YJCase(-1,-1);
+                caseTo = plateau.plateauToCase(caseToPlaceOutput);
+                moveType = YokaiJavaEngineProtocol.YJMoveType.YJ_PLACE;
+
+            } else {
+                pieceOutput = plateau.plateau[from][0];
+                if(plateau.plateau[to][0] != "v")
+                    capture = 1;
+                moveType = YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE;
+                caseFrom = plateau.plateauToCase(from);
+                caseTo = plateau.plateauToCase(to);
+            }
+
+            switch(pieceOutput){
                 case "oni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_ONI;
                     break;
                 case "kirin" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_KIRIN;
@@ -330,18 +423,10 @@ public class JavaEngine {
                 case "super_oni" : piece = YokaiJavaEngineProtocol.YJPiece.YJ_SUPER_ONI;
                     break;
             }
-            YokaiJavaEngineProtocol.YJCase caseFrom = plateau.plateauToCase(from);
-            YokaiJavaEngineProtocol.YJCase caseTo = plateau.plateauToCase(to);
-
-            System.out.println("Plateau : " + plateau.toString());
-
-            int capture = 0;
-            if(plateau.plateau[to][0] != "v")
-              capture = 1;
 
             return new YokaiJavaEngineProtocol.YJAskNextMoveAnswer(
                     YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SUCCESS,
-                    YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE,
+                    moveType,
                     piece,
                     plateau.getSensActuel(),
                     capture,
@@ -355,13 +440,14 @@ public class JavaEngine {
         catch (Exception e) {
             System.err.println("Other exception : " + e);
         }
+
         return new YokaiJavaEngineProtocol.YJAskNextMoveAnswer(
                 YokaiJavaEngineProtocol.YJReturnCode.YJ_ERR_SEND_MOVE,
-                null,
-                null,
-                null,
+                YokaiJavaEngineProtocol.YJMoveType.YJ_MOVE,
+                YokaiJavaEngineProtocol.YJPiece.YJ_ONI,
+                plateau.getSensActuel(),
                 0,
-                null,
-                null);
+                plateau.plateauToCase(0),
+                plateau.plateauToCase(6));
     }
 }
