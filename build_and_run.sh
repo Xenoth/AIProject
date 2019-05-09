@@ -63,7 +63,8 @@ sleep 1
 java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT} &
 java -cp "./build/:$2" "JavaEngine" ${JAVA_SERVER_PORT2} &
 cd build/bin
-./yokaiServeur ${C_SERVER_PORT} &
+#./yokaiServeur ${C_SERVER_PORT} &
+./serveur ${C_SERVER_PORT} &
 sleep 1
 ./joueur ${C_SERVER_NAME} ${C_SERVER_PORT} ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT} &
 ./joueur ${C_SERVER_NAME} ${C_SERVER_PORT} ${JAVA_SERVER_NAME} ${JAVA_SERVER_PORT2}

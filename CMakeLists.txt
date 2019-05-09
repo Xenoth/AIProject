@@ -11,13 +11,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # SCS-Lib
 file(GLOB LIB_SOURCES src/lib/c/SCS-Lib/*.c)
 file(GLOB LIB_HEADERS src/lib/c/SCS-Lib/*.h)
+#file(GLOB LIB_YOKAI build/bin/yokai.o)
+
 
 add_library(SCS-Lib ${LIB_SOURCES} ${LIB_HEADERS})
 
+#add_library(YOKAI-Lib ${LIB_YOKAI})
+
 # Executables
 add_executable(joueur src/main/c/joueur.c src/main/c/JoueurEngine.h src/main/c/JoueurEngine.c src/protocol/c/protocolYokai.h src/protocol/c/YokaiJavaEngineProtocol.h src/protocol/c/YokaiJavaEngineProtocol.c)
-# add_executable(serveur src/main/c/server.c)
+add_executable(serveur build/bin/yokai-fPIC.o src/main/c/server.c src/main/c/server.h Ref/validation.h Ref/protocolYokai.h)
 
 ## Linking executables and libs
 target_link_libraries(joueur SCS-Lib)
-# target_link_libraries(serveur SCS-Lib)
+target_link_libraries(serveur SCS-Lib)
+
