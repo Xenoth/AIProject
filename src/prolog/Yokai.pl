@@ -207,7 +207,9 @@ recuperer_meilleur_coup_v1(Plateau, Faction, FromCase, ToCase):-
 % renseignant la valeur. Amelioration de V1 en verifiant si koropokkuru
 % est en echec et doit etre sauver.
 recuperer_meilleur_coup_v2(Plateau, Faction, FromCase, ToCase, Gain):-
-    koropokkuru_en_echec_coup(Plateau, Faction, [[_,_,_,FromCase], ToCase, Gain]),!.
+    koropokkuru_en_echec_coup(Plateau, Faction, [[_,_,_,FromCase], ToCase, Valeur]),
+    valeur_piece_sur_plateau(koropokkuru, V2),
+    Gain is Valeur + V2,!.
 
 recuperer_meilleur_coup_v2(Plateau, Faction, FromCase, ToCase, Gain):-
     recuperer_pieces_faction(Plateau, Faction, ListePieces),
@@ -406,7 +408,7 @@ liste_num_case(nord, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
 
 %% trouver_placement_piece(+Plateau, +Piece, +Faction +Sens,
 %% +ListeCases, -Case)
-% Retourne une case viable pour poser la Piece donnée.
+% Retourne une case viable pour poser la Piece donnï¿½e.
 trouver_placement_piece(_Plateau, _Piece, _Faction, _Sens, [], Case):-
     Case is -1.
 
@@ -473,15 +475,3 @@ test(piece_peut_etre_pose, [true]):-
     piece_peut_etre_pose(Plateau, kodama, sud, moi,14).
 
 :- end_tests(poser).
-
-
-
-
-
-
-
-
-
-
-
-
