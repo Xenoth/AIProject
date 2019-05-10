@@ -440,7 +440,16 @@ int askNextCoupToJavaServer(JoueurState *state, YJAskNextMoveRequest askNextMove
 
 int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMoveAnswer)
 {
-    char buff[4];
+    int err = recv(state->socketJava, askNextMoveAnswer, sizeof(YJAskNextMoveAnswer), 0);
+    if (err < 0) {
+ 		perror("joueur erreur dans la reception du coup");
+     	return -5;
+    }
+
+//La reception en commentaire ci-dessous est fonctionnelle
+//elle prend en compte la possible différence de taille des int entre C et en JAVA
+
+    /*char buff[4];
 
     if(receiveByteBufferFromJavaEngine(state, buff) < 0)
         return -1;
@@ -496,6 +505,7 @@ int getNextCoupFromJavaServer(JoueurState *state, YJAskNextMoveAnswer *askNextMo
     askNextMoveAnswer->to.Line = byteArrayJavaToIntC(buff);
 
     printf("Received to Line = %d\n", askNextMoveAnswer->to.Line);
+*/
 
     return 0;
 
