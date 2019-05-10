@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.5.1)
 project(AIPROJECT)
 
 set(CMAKE_C_STANDARD 99)
@@ -20,9 +20,9 @@ add_library(SCS-Lib ${LIB_SOURCES} ${LIB_HEADERS})
 
 # Executables
 add_executable(joueur src/main/c/joueur.c src/main/c/JoueurEngine.h src/main/c/JoueurEngine.c src/protocol/c/protocolYokai.h src/protocol/c/YokaiJavaEngineProtocol.h src/protocol/c/YokaiJavaEngineProtocol.c)
-add_executable(serveur build/bin/yokai-fPIC.o src/main/c/server.c src/main/c/server.h Ref/validation.h Ref/protocolYokai.h)
+add_executable(serveurArbitre build/bin/yokai-fPIC.o src/main/c/serveurArbitre.c src/main/c/serveurArbitre.h Ref/validation.h Ref/protocolYokai.h)
 
 ## Linking executables and libs
 target_link_libraries(joueur SCS-Lib)
-target_link_libraries(serveur SCS-Lib)
+target_link_libraries(serveurArbitre SCS-Lib)
 

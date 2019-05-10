@@ -79,8 +79,8 @@ int main(int argc, char **argv)
      	//debut première partie
     	printf("-------------------------Début de la 1er partie-------------------------\n");
      	initialiserPartie();
-     	err = jouerPartie();
-     	if(err < 0){
+     	int resultatpartie1 = jouerPartie();
+     	if(resultatpartie1 < 0){
      	    return-2;
      	}
 
@@ -89,11 +89,12 @@ int main(int argc, char **argv)
      	//debut deuxième partie
     	printf("-------------------------Début de la 2eme partie-------------------------\n");
      	initialiserPartie();
-     	err = jouerPartie();
-     	if(err < 0){
+     	int resultatpartie2 = jouerPartie();
+     	if(resultatpartie2 < 0){
      	    return-3;
      	}
 
+        afficherResultat(resultatpartie1, resultatpartie2);
      	closeSock();
      	return 0;
 }
@@ -213,6 +214,28 @@ int jouerPartie(){
 
 		if(coupRep.validCoup == TIMEOUT || coupRep.validCoup == TRICHE || coupRep.propCoup != CONT){
 			finPartie = true;
+            switch(coupRep.propCoup){
+                case GAGNE : 
+                        if(joueur==1){ 
+                            joueur = 2;
+                            printf("Joueur %s à Gagner !\n",nomJ2);
+                        }else{
+                            joueur = 1;
+                            printf("Joueur %s à Gagner !\n",nomJ1);
+                        }
+                    break;
+                case NUL : 
+                        joueur = 0;
+                        printf("Match nul !\n");
+                    break;
+                case PERDU : 
+                        if(joueur==1){ 
+                            printf("Joueur %s à Perdu !\n",nomJ2);
+                        }else{
+                            printf("Joueur %s à Perdu !\n",nomJ1);
+                        }
+                    break;
+            }
 		}
 		err=send(*joueur1, &coupRep, sizeof(TCoupRep),0);
 		if (err != sizeof(TCoupRep)){
@@ -244,7 +267,7 @@ int jouerPartie(){
 			}
 		}
 	}
-	return 0;
+	return joueur;
 }
 
 int receptReqCoup(int joueur){
@@ -311,19 +334,53 @@ void ordreJoueurs(){
         if(parReqJ1.piece == SUD){
             joueur1=&sock_transJ1;
             joueur2=&sock_transJ2;
+            strcpy(nomJ1, parReqJ1.nomJoueur);
+            strcpy(nomJ2, parReqJ2.nomJoueur);
         }else{
             joueur2=&sock_transJ1;
             joueur1=&sock_transJ2;
+            strcpy(nomJ2, parReqJ1.nomJoueur);
+            strcpy(nomJ1, parReqJ2.nomJoueur);
         }
     }else{
         if(parReqJ2.piece == SUD){
             joueur1=&sock_transJ2;
             joueur2=&sock_transJ1;
+            strcpy(nomJ2, parReqJ1.nomJoueur);
+            strcpy(nomJ1, parReqJ2.nomJoueur);
         }else{
             joueur2=&sock_transJ2;
             joueur1=&sock_transJ1;
+            strcpy(nomJ1, parReqJ1.nomJoueur);
+            strcpy(nomJ2, parReqJ2.nomJoueur);
         }
     }
+}
+
+void afficherResultat(int resultatpartie1, int resultatpartie2){
+    int j1NbrPartG = 0, j1NbrPartP = 0;
+    int j2NbrPartG = 0, j2NbrPartP = 0;
+    int nbrMatchNull = 0;
+    if(resultatpartie1 == 1){
+        j1NbrPartG++;
+        j2NbrPartP++;
+    }else if(resultatpartie1 == 2){
+        j2NbrPartG++;
+        j1NbrPartP++;
+    }else{
+        nbrMatchNull++;
+    }
+    if(resultatpartie2 == 1){
+        j1NbrPartG++;
+        j2NbrPartP++;
+    }else if(resultatpartie2 == 2){
+        j2NbrPartG++;
+        j1NbrPartP++;
+    }else{
+        nbrMatchNull++;
+    }
+    printf("Joueur %s - Matchs gagnes : %d / Matchs nuls : %d / Matchs perdus : %d\n",nomJ1,j1NbrPartG,nbrMatchNull,j1NbrPartP);
+    printf("Joueur %s - Matchs gagnes : %d / Matchs nuls : %d / Matchs perdus : %d\n",nomJ2,j2NbrPartG,nbrMatchNull,j2NbrPartP);
 }
 
 void closeSock(){

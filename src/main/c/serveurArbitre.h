@@ -25,6 +25,7 @@ int jouerPartie();
 int receptReqCoup(int joueur);
 void inverserJoueur();
 void ordreJoueurs();
+void afficherResultat(int resultatpartie1, int resultatpartie2);
 void closeSock();
 
 #endif
