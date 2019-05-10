@@ -1,3 +1,4 @@
+// Author : Quentin Oberson
 #include "serveurArbitre.h"
 
 int ndfs,
@@ -215,8 +216,8 @@ int jouerPartie(){
 		if(coupRep.validCoup == TIMEOUT || coupRep.validCoup == TRICHE || coupRep.propCoup != CONT){
 			finPartie = true;
             switch(coupRep.propCoup){
-                case GAGNE : 
-                        if(joueur==1){ 
+                case GAGNE :
+                        if(joueur==1){
                             joueur = 2;
                             printf("Joueur %s à Gagner !\n",nomJ2);
                         }else{
@@ -224,12 +225,12 @@ int jouerPartie(){
                             printf("Joueur %s à Gagner !\n",nomJ1);
                         }
                     break;
-                case NUL : 
+                case NUL :
                         joueur = 0;
                         printf("Match nul !\n");
                     break;
-                case PERDU : 
-                        if(joueur==1){ 
+                case PERDU :
+                        if(joueur==1){
                             printf("Joueur %s à Perdu !\n",nomJ2);
                         }else{
                             printf("Joueur %s à Perdu !\n",nomJ1);

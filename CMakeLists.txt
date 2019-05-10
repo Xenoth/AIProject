@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 2.6.1)
 project(AIPROJECT)
 
 set(CMAKE_C_STANDARD 99)
@@ -25,4 +25,3 @@ add_executable(serveurArbitre build/bin/yokai-fPIC.o src/main/c/serveurArbitre.c
 ## Linking executables and libs
 target_link_libraries(joueur SCS-Lib)
 target_link_libraries(serveurArbitre SCS-Lib)
-
