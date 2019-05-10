@@ -1,3 +1,4 @@
+// Author : Pol Bailleux
 #include "JoueurEngine.h"
 
 #define NAME_JOUEUR "Bailleux-Oberson"
