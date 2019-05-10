@@ -1,22 +1,4 @@
-/*#include "../../lib/c/SCS-Lib/fonctionsTCP.h"
-#include "../../protocol/c/validation.h"
-#include "../../protocol/c/protocoleYokai.h"*/
-#include "src/lib/c/SCS-Lib/fonctionsTCP.h"
-#include "Ref/validation.h"
-#include "src/protocol/c/protocoleYokai.h"
-
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <stdbool.h>
-#include <unistd.h>
-
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#define TIME_MAX 6
+#include "serveurArbitre.h"
 
 int ndfs,
 	port,
@@ -86,28 +68,31 @@ int main(int argc, char **argv)
 
      	//recupération des deux requète partieReq
      	receptReqPartie();
-     	//ordre des joueurs
-     	if(firstSend == 1){
-            joueur1=&sock_transJ1;
-            joueur2=&sock_transJ2;
-        }else{
-            joueur2=&sock_transJ1;
-            joueur1=&sock_transJ2;
-        }
-     	//envoie réponse pour les demande de partie
-     	sendRepPartie();
 
+     	//envoie réponse pour les demande de partie
+     	err = sendRepPartie();
+     	if(err<0){
+     	    return -1;
+     	}
+     	//ordre des joueurs
+     	ordreJoueurs();
      	//debut première partie
     	printf("-------------------------Début de la 1er partie-------------------------\n");
      	initialiserPartie();
-     	jouerPartie();
+     	err = jouerPartie();
+     	if(err < 0){
+     	    return-2;
+     	}
 
      	inverserJoueur();
 
      	//debut deuxième partie
     	printf("-------------------------Début de la 2eme partie-------------------------\n");
      	initialiserPartie();
-     	jouerPartie();
+     	err = jouerPartie();
+     	if(err < 0){
+     	    return-3;
+     	}
 
      	closeSock();
      	return 0;
@@ -122,15 +107,20 @@ void receptReqPartie(){
 	    if(firstSend == 0){
 	        firstSend = 1;
 	    }
-        while(recved < sizeof(TPartieReq)){
-            err = recv(sock_transJ1, &parReqJ1, sizeof(TPartieReq), 0);
-            if (err < 0) {
-                perror("serveur: erreur dans la reception (J1 : sock_transJ1)");
-                closeSock();
-            }
-            recved += err;
-            printf("recu partie j1 : %d/%ld\n",recved,sizeof(TPartieReq));
+        err = recv(sock_transJ1, &parReqJ1, sizeof(TPartieReq), 0);
+        if (err != sizeof(TPartieReq)) {
+            perror("Serveur: erreur dans la reception (J1 : sock_transJ1)");
+            closeSock();
+            //TODO renvoyer une erreur PARTIE
         }
+        printf("recu partie j1\n");
+        err = recv(sock_transJ2, &parReqJ2, sizeof(TPartieReq), 0);
+        if (err != sizeof(TPartieReq)) {
+            perror("Serveur: erreur dans la reception (J2 : sock_transJ2)");
+            closeSock();
+            //TODO renvoyer une erreur PARTIE
+        }
+        printf("recu partie j2\n");
     }
 	recved = 0;
 	//Reception de la deuxième requête Partie
@@ -138,15 +128,20 @@ void receptReqPartie(){
 	    if(firstSend == 0){
 	        firstSend = 2;
 	    }
-        while(recved < sizeof(TPartieReq)){
-            err = recv(sock_transJ2, &parReqJ2, sizeof(TPartieReq), 0);
-            if (err < 0 && parReqJ1.idReq == PARTIE) {
-                perror("serveur: erreur dans la reception (J2 : sock_transJ2)");
-                closeSock();
-            }
-            recved += err;
-            printf("recu partie j2 : %d/%ld\n",recved,sizeof(TPartieReq));
+        err = recv(sock_transJ2, &parReqJ2, sizeof(TPartieReq), 0);
+        if (err != sizeof(TPartieReq)) {
+            perror("Serveur: erreur dans la reception (J2 : sock_transJ2)");
+            closeSock();
+            //TODO renvoyer une erreur PARTIE
         }
+        printf("recu partie j2\n");
+        err = recv(sock_transJ1, &parReqJ1, sizeof(TPartieReq), 0);
+        if (err != sizeof(TPartieReq)) {
+            perror("Serveur: erreur dans la reception (J1 : sock_transJ1)");
+            closeSock();
+            //TODO renvoyer une erreur PARTIE
+        }
+        printf("recu partie j1\n");
     }
 }
 
@@ -159,10 +154,10 @@ int sendRepPartie(){
 		parRepJ1.validSensTete = KO;
         parRepJ2.err = ERR_TYP;
         parRepJ1.err = ERR_TYP;
-	    if(parReqJ1.idReq != PARTIE){
+	    if(parReqJ1.idReq != PARTIE && parReqJ2.idReq == PARTIE){
             parRepJ2.err = ERR_PARTIE;
         }
-	    if(parReqJ2.idReq != PARTIE){
+	    if(parReqJ2.idReq != PARTIE && parReqJ1.idReq == PARTIE){
             parRepJ1.err = ERR_PARTIE;
         }
 	}else{
@@ -171,27 +166,33 @@ int sendRepPartie(){
 		printf("nom J2 : %s\n",parReqJ2.nomJoueur);
 		strcpy(nomJ2, parReqJ2.nomJoueur);
 		strcpy(parRepJ1.nomAdvers, nomJ2);
-		parRepJ1.validSensTete = OK;
 	    //création reponse j2
 		parRepJ2.err = ERR_OK;
 		printf("nom J1 : %s\n",parReqJ1.nomJoueur);
 		strcpy(nomJ1, parReqJ1.nomJoueur);
 		strcpy(parRepJ2.nomAdvers, nomJ1);
-		parRepJ2.validSensTete = KO;
+        if(firstSend == 1){
+	    	parRepJ1.validSensTete = OK;
+		    parRepJ2.validSensTete = KO;
+
+        }else{
+	    	parRepJ1.validSensTete = KO;
+	    	parRepJ2.validSensTete = OK;
+        }
 	}
 
 	//Envoie des réponse Partie
-	err = send(*joueur1, &parRepJ1, sizeof(TPartieRep),0);
+	err = send(sock_transJ1, &parRepJ1, sizeof(TPartieRep),0);
 	if (err != sizeof(TPartieRep)){
-		perror("Serveur : Erreur sur l'envoie de la réponse de la partie à J1");
+		perror("Serveur : Erreur sur l'envoie de la réponse de la partie à J1\n");
 		closeSock();
-		return 13;
+		return -1;
 	}
-	err = send(*joueur2, &parRepJ2, sizeof(TPartieRep),0);
+	err = send(sock_transJ2, &parRepJ2, sizeof(TPartieRep),0);
 	if (err != sizeof(TPartieRep)){
-		perror("Serveur : Erreur sur l'envoie de la réponse de la partie à J2");
+		perror("Serveur : Erreur sur l'envoie de la réponse de la partie à J2\n");
 		closeSock();
-		return 13;
+		return -2;
 	}
 	return 0;
 }
@@ -206,6 +207,9 @@ int jouerPartie(){
 		FD_SET(sock_transJ2, &readSet);
 
 		joueur = receptReqCoup(joueur);
+		if(joueur<0){
+		    return -1;
+		}
 
 		if(coupRep.validCoup == TIMEOUT || coupRep.validCoup == TRICHE || coupRep.propCoup != CONT){
 			finPartie = true;
@@ -214,13 +218,13 @@ int jouerPartie(){
 		if (err != sizeof(TCoupRep)){
 			perror("Serveur : Erreur sur l'envoie de la réponse du coup à J1");
 			closeSock();
-			return 13;
+			return -2;
 		}
 		err=send(*joueur2, &coupRep, sizeof(TCoupRep),0);
 		if (err != sizeof(TCoupRep)){
 			perror("Serveur : Erreur sur l'envoie de la réponse du coup à J2");
 			closeSock();
-			return 13;
+			return -3;
 		}
 		if(!finPartie){
 			if(joueur == 2){
@@ -228,14 +232,14 @@ int jouerPartie(){
 				if (err != sizeof(TCoupReq)){
 					perror("Serveur : Erreur sur l'envoie du coup à J2");
 					closeSock();
-					return 13;
+					return -4;
 				}
 			}else{
 				err=send(*joueur1, &coupReq, sizeof(TCoupReq),0);
 				if (err != sizeof(TCoupReq)){
 					perror("Serveur : Erreur sur l'envoie du coup à J1");
 					closeSock();
-					return 13;
+					return -5;
 				}
 			}
 		}
@@ -251,23 +255,20 @@ int receptReqCoup(int joueur){
 	if (err < 0) {
 			perror("serveur: erreur dans la selection de la socket (coup)");
 			closeSock();
-			return 4;
+			return -1;
 	}else if(err == 0){
 			perror("serveur: erreur dans la selection de la socket (timeout)");
 			coupRep.err = ERR_COUP;
 			coupRep.validCoup = TIMEOUT;
 	}
 	if(FD_ISSET(*joueur1, &readSet)!=0){
-		while(recved < sizeof(TCoupReq)){
-			err = recv(*joueur1, &coupReq, sizeof(TCoupReq), 0);
-			if (err < 0) {
-				perror("serveur: erreur dans la reception (J1)");
-				closeSock();
-				return 5;
-			}
-			recved += err;
-			printf("recu coup j1 : %d/%ld\n",recved,sizeof(TCoupReq));
+	    err = recv(*joueur1, &coupReq, sizeof(TCoupReq), 0);
+		if (err < 0) {
+			perror("serveur: erreur dans la reception (J1)");
+			closeSock();
+			return -2;
 		}
+
 		//Validation du coup
 		valide = validationCoup(joueur, coupReq, &coupRep.propCoup);
 		coupRep.err = ERR_OK;
@@ -279,15 +280,11 @@ int receptReqCoup(int joueur){
 		joueur = 2;
 	}
 	if(FD_ISSET(*joueur2, &readSet)!=0){
-		while(recved < sizeof(TCoupReq)){
-			err = recv(*joueur2, &coupReq, sizeof(TCoupReq), 0);
-			if (err < 0) {
-				perror("serveur: erreur dans la reception (J2)");
-				closeSock();
-				return 5;
-			}
-			recved += err;
-			printf("recu coup j2 : %d/%ld\n",recved,sizeof(TCoupReq));
+		err = recv(*joueur2, &coupReq, sizeof(TCoupReq), 0);
+		if (err < 0) {
+			perror("serveur: erreur dans la reception (J2)");
+			closeSock();
+			return -3;
 		}
 		//Validation du coup
 		valide = validationCoup(joueur, coupReq, &coupRep.propCoup);
@@ -306,6 +303,27 @@ void inverserJoueur(){
 	int *joueurtmp = joueur1;
 	joueur1 = joueur2;
 	joueur2 = joueurtmp;
+}
+
+void ordreJoueurs(){
+    //ordre des joueurs
+   	if(parRepJ1.validSensTete == OK){
+        if(parReqJ1.piece == SUD){
+            joueur1=&sock_transJ1;
+            joueur2=&sock_transJ2;
+        }else{
+            joueur2=&sock_transJ1;
+            joueur1=&sock_transJ2;
+        }
+    }else{
+        if(parReqJ2.piece == SUD){
+            joueur1=&sock_transJ2;
+            joueur2=&sock_transJ1;
+        }else{
+            joueur2=&sock_transJ2;
+            joueur1=&sock_transJ1;
+        }
+    }
 }
 
 void closeSock(){
