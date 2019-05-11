@@ -19,7 +19,7 @@ then
     exit 1
 fi
 
-if [[ ! -e $1 ]]
+if [[ ! -e $2 ]]
 then
     echo Jasper classpath not found at \'$2\'
     exit 1
