@@ -13,7 +13,7 @@ then
     exit 1
 fi
 
-if [[ ! -e $1 ]]
+if [[ ! -e $2 ]]
 then
     echo LD library folder not found at \'$1\'
     exit 1
